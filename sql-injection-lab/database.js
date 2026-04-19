@@ -121,7 +121,7 @@ async function seedData() {
   const seeds = [
     { username: "admin", password: "admin123", bio: "System administrator (demo account)." },
     { username: "user", password: "password", bio: "Regular user (demo account)." },
-    { username: "test", password: "test123", bio: "Test account for learning." },
+    { username: "test", password: "test123", bio: "Test account." },
   ];
 
   for (const s of seeds) {

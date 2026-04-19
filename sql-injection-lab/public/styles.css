@@ -25,6 +25,10 @@ body {
   height: 100%;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
   color: var(--text);
@@ -38,6 +42,11 @@ body {
 a {
   color: inherit;
   text-decoration: none;
+}
+
+:focus-visible {
+  outline: 2px solid rgba(0, 255, 156, 0.55);
+  outline-offset: 2px;
 }
 
 code,
@@ -167,6 +176,7 @@ code {
   border-radius: 3px;
   background: radial-gradient(circle at 30% 30%, rgba(0, 255, 156, 0.95), rgba(0, 255, 156, 0.25));
   box-shadow: 0 0 26px rgba(0, 255, 156, 0.22);
+  animation: brandPulse 2.6s ease-in-out infinite;
 }
 
 .brand__name {
@@ -324,6 +334,10 @@ code {
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
 }
 
+.btnIcon:active {
+  transform: translateY(0);
+}
+
 /* Layout */
 .shell {
   max-width: 1180px;
@@ -340,7 +354,7 @@ code {
 
 .sidebar {
   position: sticky;
-  top: 118px;
+  top: 92px;
   display: grid;
   gap: 14px;
 }
@@ -539,19 +553,29 @@ textarea:focus {
   border-color: rgba(0, 255, 156, 0.48);
 }
 
+.btn:active {
+  transform: translateY(0);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.34);
+}
+
 .btn:hover {
   text-shadow: 0 0 12px rgba(0, 255, 156, 0.12);
 }
 
 .btn--primary {
-  background: rgba(0, 255, 156, 0.12);
+  background: linear-gradient(90deg, rgba(0, 255, 156, 0.2), rgba(0, 255, 156, 0.08));
   color: rgba(0, 255, 156, 0.92);
   border-color: rgba(0, 255, 156, 0.55);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42), 0 0 0 1px rgba(0, 255, 156, 0.1);
 }
 
 .btn--ghost {
   background: rgba(0, 0, 0, 0.16);
   color: var(--text);
+}
+
+.btn--ghost:hover {
+  border-color: rgba(0, 255, 156, 0.38);
 }
 
 .btn--danger {
@@ -771,6 +795,18 @@ textarea:focus {
   }
 }
 
+@keyframes brandPulse {
+  0%,
+  100% {
+    filter: saturate(1.05);
+    transform: translateY(0);
+  }
+  50% {
+    filter: saturate(1.25);
+    transform: translateY(-0.5px);
+  }
+}
+
 /* Boot overlay */
 .boot {
   position: fixed;
@@ -836,7 +872,9 @@ textarea:focus {
   .missionCard,
   .nav__link,
   .btn,
-  .btnIcon {
+  .btnIcon,
+  .brand__mark {
     transition: none;
+    animation: none;
   }
 }

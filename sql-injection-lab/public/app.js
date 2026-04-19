@@ -48,6 +48,14 @@ async function api(path, opts) {
   return data;
 }
 
+async function simulate(context, input) {
+  try {
+    return await api("/api/simulate", { method: "POST", body: JSON.stringify({ context, input }) });
+  } catch {
+    return null;
+  }
+}
+
 function page() {
   const p = window.location.pathname;
   if (p === "/") return "home";
@@ -429,6 +437,31 @@ function wireAuthTabs() {
   set("login");
 }
 
+function wireQuickFill() {
+  const btnAdmin = qs("#quickAdmin");
+  const btnUser = qs("#quickUser");
+  const btnTest = qs("#quickTest");
+  if (!btnAdmin && !btnUser && !btnTest) return;
+
+  const tabLogin = qs("#tabLogin");
+  const usernameEl = qs("#loginForm input[name='username']");
+  const passwordEl = qs("#loginForm input[name='password']");
+  if (!usernameEl || !passwordEl) return;
+
+  function fill(username, password) {
+    tabLogin?.click();
+    usernameEl.value = username;
+    passwordEl.value = password;
+    passwordEl.focus();
+    Sound.beep({ freq: 720, dur: 0.04, gain: 0.016 });
+    Terminal.write(`quick-fill: ${username}`);
+  }
+
+  btnAdmin?.addEventListener("click", () => fill("admin", "admin123"));
+  btnUser?.addEventListener("click", () => fill("user", "password"));
+  btnTest?.addEventListener("click", () => fill("test", "test123"));
+}
+
 function wireAuthForms() {
   const loginForm = qs("#loginForm");
   const signupForm = qs("#signupForm");
@@ -449,30 +482,15 @@ function wireAuthForms() {
 
       try {
         const data = await api("/api/login", { method: "POST", body: JSON.stringify(payload) });
-        if (data.demo?.bypassSimulated) {
+        if (data.demo?.detected) {
           Threat.bump("sqli_detected");
           Sound.beep({ freq: 520, dur: 0.08, gain: 0.02 });
-          Terminal.write("potential injection pattern flagged");
-          setText(
-            result,
-            [
-              "WARNING: SQL injection pattern detected",
-              "",
-              "This input would bypass authentication in a vulnerable system.",
-              "Impact Level: HIGH",
-              "",
-              "Simulated Query Behavior:",
-              data.demo.unsafeQuery,
-              "",
-              "Simulated DB response:",
-              JSON.stringify(data.demo.simulatedResponse, null, 2),
-              "",
-              "VulnLab is safe: no bypass occurred and you are NOT logged in from this simulation.",
-            ].join("\n")
-          );
+          Terminal.write("login: input flagged");
+          setText(result, "Input flagged. Adjust input and try again.");
           return;
         }
 
+        if (!data.user?.username) throw new Error("Login failed.");
         Terminal.write(`login success for ${data.user.username}`);
         Sound.beep({ freq: 920, dur: 0.06, gain: 0.02 });
         setText(result, `Login successful. Redirecting...`);
@@ -553,12 +571,12 @@ function wireSimulationEngine() {
       lines.push(data.output.details);
       if (data.output.unsafeExample) {
         lines.push("");
-        lines.push("Unsafe example (for learning):");
+        lines.push("Example:");
         lines.push(String(data.output.unsafeExample));
       }
       if (data.output.fix) {
         lines.push("");
-        lines.push("How to fix:");
+        lines.push("Mitigation:");
         lines.push(String(data.output.fix));
       }
 
@@ -586,22 +604,17 @@ function wireSearch() {
     await sleep(260 + Math.random() * 380);
     try {
       const data = await api(`/api/search?term=${encodeURIComponent(term)}`);
-      if (data.demo?.detected) {
-        Threat.bump("sqli_detected");
+      const sim = await simulate("search", term);
+      if (sim?.detected) {
+        if (sim.kind === "SQLi") Threat.bump("sqli_detected");
         Sound.beep({ freq: 520, dur: 0.07, gain: 0.02 });
-        Terminal.write("search: injection pattern flagged (demo)");
+        Terminal.write("search: input flagged");
       } else {
         Terminal.write("search: ok");
       }
 
       const lines = [];
-      if (data.demo?.detected) {
-        lines.push("WARNING: injection pattern detected");
-        lines.push("");
-        lines.push("Unsafe query example:");
-        lines.push(data.demo.unsafeQuery);
-        lines.push("");
-      }
+      if (sim?.detected) lines.push(`WARNING: ${sim.kind} pattern detected (impact: ${sim.impact})\n`);
       lines.push("Results:");
       lines.push(JSON.stringify(data.results, null, 2));
       setText(out, lines.join("\n"));
@@ -625,22 +638,17 @@ function wireLookup() {
     await sleep(260 + Math.random() * 380);
     try {
       const data = await api(`/api/users/lookup?username=${encodeURIComponent(username)}`);
-      if (data.demo?.detected) {
-        Threat.bump("sqli_detected");
+      const sim = await simulate("lookup", username);
+      if (sim?.detected) {
+        if (sim.kind === "SQLi") Threat.bump("sqli_detected");
         Sound.beep({ freq: 520, dur: 0.07, gain: 0.02 });
-        Terminal.write("lookup: injection pattern flagged (demo)");
+        Terminal.write("lookup: input flagged");
       } else {
         Terminal.write("lookup: ok");
       }
 
       const lines = [];
-      if (data.demo?.detected) {
-        lines.push("WARNING: injection pattern detected");
-        lines.push("");
-        lines.push("Unsafe query example:");
-        lines.push(data.demo.unsafeQuery);
-        lines.push("");
-      }
+      if (sim?.detected) lines.push(`WARNING: ${sim.kind} pattern detected (impact: ${sim.impact})\n`);
       lines.push("Lookup result:");
       lines.push(JSON.stringify(data.user, null, 2));
       setText(out, lines.join("\n"));
@@ -701,12 +709,13 @@ function wireComments() {
     setText(out, "processing...");
     await sleep(240 + Math.random() * 420);
     try {
-      const data = await api("/api/comments", { method: "POST", body: JSON.stringify({ content }) });
-      if (data.demo?.xssDetected) {
+      await api("/api/comments", { method: "POST", body: JSON.stringify({ content }) });
+      const sim = await simulate("comment", content);
+      if (sim?.detected && sim.kind === "XSS") {
         Threat.bump("xss_detected");
         Sound.beep({ freq: 560, dur: 0.07, gain: 0.02 });
-        Terminal.write("comment: xss pattern detected (demo)");
-        setText(out, "WARNING: XSS payload detected. Stored safely and rendered as text (not executed).");
+        Terminal.write("comment: input flagged");
+        setText(out, "Input flagged.");
       } else {
         Terminal.write("comment: posted");
         setText(out, "Comment posted.");
@@ -736,13 +745,13 @@ async function loadProfileAndIdorNotice() {
   Terminal.write("profile: loading...");
   const data = await api(`/api/profile${requestedId ? `?id=${encodeURIComponent(requestedId)}` : ""}`);
 
-  if (data.idor?.warning) {
+  if (data.idor?.detected) {
     Threat.bump("idor_attempt");
     Sound.beep({ freq: 610, dur: 0.06, gain: 0.02 });
-    Terminal.write("idor: attempt flagged (educational)");
-    setText(out, data.idor.warning);
+    Terminal.write("idor: access flagged");
+    setText(out, `Access blocked.\nrequested: ${data.idor.requestedId}\nallowed: ${data.idor.allowedId}`);
   } else {
-    setText(out, "No IDOR warning.");
+    setText(out, "OK.");
   }
 
   setText(idEl, data.profile.id);
@@ -763,12 +772,13 @@ function wireBio() {
     setText(out, "processing...");
     await sleep(260 + Math.random() * 380);
     try {
-      const data = await api("/api/profile/bio", { method: "POST", body: JSON.stringify({ bio }) });
-      if (data.demo?.xssDetected) {
+      await api("/api/profile/bio", { method: "POST", body: JSON.stringify({ bio }) });
+      const sim = await simulate("bio", bio);
+      if (sim?.detected && sim.kind === "XSS") {
         Threat.bump("xss_detected");
         Sound.beep({ freq: 560, dur: 0.07, gain: 0.02 });
-        Terminal.write("bio: xss pattern detected (demo)");
-        setText(out, "WARNING: XSS payload detected in bio. Stored safely and rendered as text (not executed).");
+        Terminal.write("bio: input flagged");
+        setText(out, "Input flagged.");
       } else {
         Terminal.write("bio: updated");
         setText(out, "Bio updated.");
@@ -792,92 +802,82 @@ function wireToolCards() {
     sqlmap: {
       name: "SQLMap",
       where: "Web / database auditing",
-      what: "Automation-focused SQL injection auditing tool (concept-level learning).",
-      workflow: "Identify inputs/parameters · Observe query construction · Validate defenses (parameterization)",
-      simulated: "testing parameter handling...\npotential injection pattern flagged (simulated)\nno data extracted (safe)",
+      what: "Automation-focused SQL injection auditing tool.",
+      workflow: "Identify inputs · Observe behavior · Validate defenses",
+      simulated: "testing parameter handling...\npotential injection pattern flagged\nresult: no data extracted",
       defense: "Prepared statements · Validation · Least privilege · Monitoring",
-      warning: "Unauthorized usage is illegal. VulnLab does not perform real injection or dumping.",
     },
     nmap: {
       name: "Nmap",
       where: "Network discovery / exposure assessment",
-      what: "Discovers reachable services and helps build an inventory of exposed ports.",
-      workflow: "Define scope (authorized) · Discover exposed services · Reduce attack surface",
-      simulated: "target: localhost (simulated)\nprobing common ports...\nports detected (simulated): 80, 3000",
-      defense: "Firewalls · Disable unused services · Segmentation · Continuous inventory",
-      warning: "Only scan systems you own or have permission to test.",
+      what: "Discovers reachable services and exposed ports.",
+      workflow: "Discover exposed services · Build inventory · Reduce attack surface",
+      simulated: "target: localhost\nprobing common ports...\nports detected: 80, 3000",
+      defense: "Firewalls · Disable unused services · Segmentation · Inventory",
     },
     burp: {
       name: "Burp Suite",
       where: "Web testing / proxy inspection",
-      what: "Intercepting proxy used to observe and validate HTTP requests, cookies, and auth flows.",
+      what: "Intercepting proxy to inspect requests, cookies, and auth flows.",
       workflow: "Intercept traffic · Inspect cookies/headers · Validate auth/session design",
-      simulated: "capturing request: POST /api/login\nanalyzing cookies...\nfinding (simulated): secure flags present",
+      simulated: "capturing request: POST /api/login\nanalyzing cookies...\nfinding: secure flags present",
       defense: "HttpOnly+SameSite cookies · CSRF defenses · Secure session design",
-      warning: "Use only for authorized testing and defensive validation.",
     },
     wireshark: {
       name: "Wireshark",
-      where: "Network troubleshooting / incident analysis",
-      what: "Packet capture and protocol analysis (pcap) for debugging and investigations.",
-      workflow: "Capture allowed traffic · Filter flows · Interpret protocol behavior",
-      simulated: "filter: loopback (simulated)\nobserved: HTTP request/response pairs\nlatency spikes (simulated)",
+      where: "Network troubleshooting / analysis",
+      what: "Packet capture and protocol analysis.",
+      workflow: "Capture traffic · Filter flows · Inspect protocol behavior",
+      simulated: "filter: loopback\nobserved: HTTP request/response pairs\nlatency spikes",
       defense: "TLS where applicable · Segmentation · Baselines and monitoring",
-      warning: "Capture only traffic you are allowed to inspect.",
     },
     metasploit: {
       name: "Metasploit Framework",
-      where: "Controlled lab training / defensive testing",
-      what: "Framework for organizing security testing modules in authorized environments.",
-      workflow: "Model threats · Validate patching/hardening · Practice detection/response",
-      simulated: "loading modules (simulated)...\nsafety checks...\nno exploitation performed (safe simulation)",
-      defense: "Patch management · Hardening · EDR/SIEM monitoring · Least privilege",
-      warning: "VulnLab does not provide exploit steps or payloads.",
+      where: "Security testing framework",
+      what: "Framework for organizing test modules.",
+      workflow: "Model threats · Validate hardening · Practice detection/response",
+      simulated: "loading modules...\nsafety checks...\nresult: no exploitation performed",
+      defense: "Patch management · Hardening · Monitoring · Least privilege",
     },
     john: {
       name: "John the Ripper",
-      where: "Password policy auditing",
-      what: "Used for auditing password strength in authorized environments.",
-      workflow: "Audit policy · Identify weak/reused passwords · Improve controls + MFA",
-      simulated: "evaluating policy strength...\nweak passwords detected: 2 (simulated)\nrecommend MFA",
+      where: "Password auditing",
+      what: "Audits password policy strength and weak credentials.",
+      workflow: "Audit policy · Identify weak/reused passwords · Improve controls",
+      simulated: "evaluating policy strength...\nweak passwords detected: 2\nrecommend MFA",
       defense: "MFA · Rate limiting · Strong hashing · Credential stuffing defenses",
-      warning: "No brute-force/cracking steps are shown here.",
     },
     hashcat: {
       name: "Hashcat",
-      where: "Credential auditing (authorized)",
-      what: "Used for auditing password storage practices and risk awareness in controlled labs.",
-      workflow: "Review hash policies · Upgrade algorithms · Monitor + enforce strong auth",
-      simulated: "legacy hashes detected: 1 (simulated)\nrecommend slow hashes\nno cracking simulated",
+      where: "Password auditing",
+      what: "Audits password storage practices and risk awareness.",
+      workflow: "Review hash policies · Upgrade algorithms · Enforce strong auth",
+      simulated: "legacy hashes detected: 1\nrecommend slow hashes",
       defense: "bcrypt/argon2 · Salt · MFA · Monitoring",
-      warning: "VulnLab does not simulate cracking or brute force.",
     },
     nikto: {
       name: "Nikto",
       where: "Web server auditing",
-      what: "Checks for common web server misconfigurations and risky settings (authorized testing).",
+      what: "Checks for common web server misconfigurations and risky settings.",
       workflow: "Identify surface · Check misconfigs · Fix headers/patches/config",
-      simulated: "checking headers...\nfinding (simulated): missing hardening header\nrecommend patching",
+      simulated: "checking headers...\nfinding: missing hardening header\nrecommend patching",
       defense: "Security headers · Patch management · Reduce attack surface",
-      warning: "Run only against servers you own or are authorized to test.",
     },
     zap: {
       name: "OWASP ZAP",
-      where: "Web app scanning (authorized)",
+      where: "Web app scanning",
       what: "Scanner/proxy to help identify defensive gaps and verify mitigations.",
-      workflow: "Passive observe · Targeted tests in scope · Fix and re-validate",
-      simulated: "passive scan (simulated)...\nfinding (simulated): suspicious input patterns\nCSP present",
+      workflow: "Passive observe · Targeted tests · Fix and re-validate",
+      simulated: "passive scan...\nfinding: suspicious input patterns\nCSP present",
       defense: "Validation · Encoding · CSP · Authz checks · Monitoring",
-      warning: "Concept-level simulation only.",
     },
     aircrack: {
       name: "Aircrack-ng",
-      where: "Wireless auditing (high-level)",
-      what: "Suite used for wireless security assessment in authorized environments.",
+      where: "Wireless auditing",
+      what: "Wireless assessment suite.",
       workflow: "Assess configuration · Verify encryption/policies · Improve monitoring and hardening",
-      simulated: "wireless auditing overview (simulated)\nnot shown: capture/cracking steps\ndefense: WPA2/3 + disable WPS",
+      simulated: "wireless auditing overview...\ndefense: WPA2/3 + disable WPS",
       defense: "WPA2/3 · Strong passphrases · Disable WPS · Monitor AP logs",
-      warning: "⚠️ No wireless attack steps are included. Unauthorized usage is illegal.",
     },
   };
 
@@ -899,7 +899,6 @@ function wireToolCards() {
       lines.push(`> tool: ${data.title}`);
       lines.push(`> domain: ${data.domain}`);
       lines.push(`> mode: ${data.mode}`);
-      lines.push(`> notice: ${data.warning}`);
       lines.push("");
       for (const s of data.script || []) lines.push(`> ${s}`);
       log.textContent = lines.join("\n");
@@ -919,15 +918,12 @@ function wireToolCards() {
     body.textContent = [
       `What it does: ${t.what}`,
       `Where it's used: ${t.where}`,
-      `Real-world use case: Authorized security assessment and defensive validation of systems you own or have permission to test.`,
-      `Typical workflow (high-level): ${t.workflow}`,
+      `Typical workflow: ${t.workflow}`,
       "",
-      "Simulated output example:",
+      "Example output:",
       t.simulated,
       "",
       `Defensive perspective: ${t.defense}`,
-      "",
-      `⚠️ Safety: ${t.warning}`,
     ].join("\n");
     modal.classList.add("modal--open");
     modal.setAttribute("aria-hidden", "false");
@@ -1028,16 +1024,9 @@ async function loadAdmin() {
   ]);
 
   if (mode.mode === "demo") {
-    setText(
-      notice,
-      [
-        "DEMO MODE NOTICE:",
-        "In a broken-auth system, an admin route might be exposed to non-admin users.",
-        "VulnLab enforces role checks; this message is educational only.",
-      ].join("\n")
-    );
+    setText(notice, "DEMO MODE: Admin access is still protected by role checks.");
   } else {
-    setText(notice, "SECURE MODE: Admin access is protected by role checks and server-side authorization.");
+    setText(notice, "SECURE MODE: Admin access is protected by role checks.");
   }
 
   const t = s.totals;
@@ -1135,7 +1124,6 @@ async function initAuthLabPanel() {
       "Auth status:",
       "- passwords: bcrypt hashed (server-side)",
       "- sessions: HttpOnly + SameSite cookies",
-      "- demo mode: simulates unsafe inputs; does not execute unsafe queries",
     ].join("\n")
   );
 }
@@ -1146,10 +1134,7 @@ async function initLearningIntro() {
   setText(
     out,
     [
-      "Learning Center loaded.",
-      "",
-      "Use this page to compare insecure patterns (examples only) with safe implementations.",
-      "VulnLab never executes unsafe code paths.",
+      "Reference loaded.",
     ].join("\n")
   );
 }
@@ -1160,14 +1145,7 @@ async function initDefenseIntro() {
   setText(
     out,
     [
-      "Defense baseline loaded.",
-      "",
-      "Recommended defaults:",
-      "- use parameterized queries everywhere",
-      "- output encode untrusted content + enforce strict CSP",
-      "- bcrypt/argon2 for passwords + rate limiting + MFA where possible",
-      "- server-side authorization for every object access",
-      "- minimize exposed services + monitor/analyze logs",
+      "Defense panel loaded.",
     ].join("\n")
   );
 }
@@ -1284,13 +1262,7 @@ async function initGuideIntro() {
   setText(
     out,
     [
-      "Testing Guide (safe, authorized):",
-      "- Intercept a request",
-      "- Send to Repeater",
-      "- Modify inputs in small, controlled ways (no payloads)",
-      "- Compare responses (status codes, lengths, errors, authz behavior)",
-      "",
-      "WARNING: Do not test systems without permission.",
+      "Guide loaded.",
     ].join("\n")
   );
 }
@@ -1535,7 +1507,7 @@ function wireChallenges() {
   }
 
   function markUnderstood() {
-    complete("Marked by learner.");
+    complete("Marked completed.");
   }
 
   function addEvidence(kind, context) {
@@ -1604,6 +1576,7 @@ async function boot() {
     await showBootOverlay(["handshake...", "verifying environment...", "awaiting credentials"]);
     wireAuthTabs();
     wireAuthForms();
+    wireQuickFill();
     return;
   }
 

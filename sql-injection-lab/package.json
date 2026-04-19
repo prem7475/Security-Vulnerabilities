@@ -1,7 +1,7 @@
 {
   "name": "vulnlab",
   "version": "1.0.0",
-  "description": "VulnLab: safe, non-exploitable cybersecurity learning lab (Demo + Secure modes)",
+  "description": "VulnLab: local security console (Demo + Secure modes)",
   "main": "server.js",
   "scripts": {
     "dev": "node --watch server.js",

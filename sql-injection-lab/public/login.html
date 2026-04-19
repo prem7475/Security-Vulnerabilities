@@ -18,13 +18,6 @@
       </div>
     </div>
 
-    <div class="banner" role="note">
-      <div class="banner__inner">
-        <span class="pill pill--warn">&#9888; FOR EDUCATIONAL USE ONLY &#8211; SAFE SIMULATION ENVIRONMENT</span>
-        <span class="banner__text">This app is safe and non-exploitable. Demo Mode only simulates behaviors.</span>
-      </div>
-    </div>
-
     <header class="topbar">
       <a class="brand" href="/">
         <span class="brand__mark" aria-hidden="true"></span>
@@ -48,15 +41,13 @@
           <section class="panel">
             <div class="panel__header">
               <div class="panel__title">Credentials</div>
-              <p class="panel__subtitle">
-                Preloaded users: <code>admin/admin123</code>, <code>user/password</code>, <code>test/test123</code>.
-              </p>
+              <p class="panel__subtitle">Quick-fill to sign in.</p>
             </div>
             <div class="panel__body stack">
-              <div class="hint">
-                Safe simulation tokens:
-                <code>[[SIM_SQLI]]</code>
-                <code>[[SIM_XSS]]</code>
+              <div class="row">
+                <button class="btn btn--ghost" id="quickAdmin" type="button">Use Admin</button>
+                <button class="btn btn--ghost" id="quickUser" type="button">Use User</button>
+                <button class="btn btn--ghost" id="quickTest" type="button">Use Test</button>
               </div>
               <div class="result result--terminal" id="authResult" aria-live="polite"></div>
             </div>
@@ -75,9 +66,7 @@
           <section class="panel">
             <div class="panel__header">
               <div class="panel__title">Access Terminal</div>
-              <p class="panel__subtitle">
-                Demo Mode explains what would happen in an unsafe app. Secure Mode uses prepared statements and bcrypt.
-              </p>
+              <p class="panel__subtitle">Sign in to continue.</p>
             </div>
             <div class="panel__body">
               <div class="row" role="tablist" aria-label="Auth tabs">
@@ -89,11 +78,11 @@
                 <form id="loginForm" class="stack" autocomplete="off">
                   <label class="hint">
                     Username
-                    <input class="input" name="username" type="text" required />
+                    <input class="input" id="loginUsername" name="username" type="text" required />
                   </label>
                   <label class="hint">
                     Password
-                    <input class="input" name="password" type="password" required />
+                    <input class="input" id="loginPassword" name="password" type="password" required />
                   </label>
                   <button class="btn btn--primary btn--full" type="submit">Login</button>
                 </form>
@@ -108,7 +97,6 @@
                     <input class="input" name="password" type="password" minlength="6" maxlength="72" required />
                   </label>
                   <button class="btn btn--ghost btn--full" type="submit">Create Account</button>
-                  <div class="hint">Secure Mode stores passwords using bcrypt hashes.</div>
                 </form>
               </div>
             </div>

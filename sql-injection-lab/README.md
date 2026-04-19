@@ -1,6 +1,4 @@
-# VulnLab (Safe Learning Lab)
-
-**FOR EDUCATIONAL USE ONLY**
+# VulnLab
 
 VulnLab is a **safe, non-exploitable** local web app that teaches common web security issues by **simulating** attack behavior in **Demo Mode**, and showing real defensive practices in **Secure Mode**.
 
@@ -10,7 +8,7 @@ It also includes a premium, hacker-style UI:
 - Boot/loading overlay with typing effect (optional)
 - Fake terminal panel with simulated logs (and safe server event stream)
 - Threat level indicator (simulated)
-- Interactive "Toolkit" cards + safe tool simulations (educational, no exploit steps)
+- Interactive "Toolkit" cards + tool simulations
 - Defense & Protection checklists + Challenge Mode quizzes
 
 ## Run

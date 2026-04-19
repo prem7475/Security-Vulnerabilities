@@ -18,18 +18,11 @@
       </div>
     </div>
 
-    <div class="banner" role="note">
-      <div class="banner__inner">
-        <span class="pill pill--warn">&#9888; FOR EDUCATIONAL USE ONLY &#8211; SAFE SIMULATION ENVIRONMENT</span>
-        <span class="banner__text">Simulations + visualization only. No real exploit behavior is implemented.</span>
-      </div>
-    </div>
-
     <header class="topbar">
       <a class="brand" href="/">
         <span class="brand__mark" aria-hidden="true"></span>
         <span class="brand__name">VulnLab</span>
-        <span class="brand__sub">Learning Console</span>
+        <span class="brand__sub">Security Console</span>
       </a>
 
       <nav class="nav" aria-label="Top navigation">
@@ -68,14 +61,14 @@
                   <div class="missionCard__title">SQL Injection Lab</div>
                   <span class="badge badge--red">HIGH</span>
                 </div>
-                <div class="missionCard__meta">Detection + safe query simulation output.</div>
+                <div class="missionCard__meta">Input flags + server-side behavior preview.</div>
               </a>
               <a class="missionCard" href="#lab-xss">
                 <div class="missionCard__head">
                   <div class="missionCard__title">XSS Lab</div>
                   <span class="badge badge--amber">MED</span>
                 </div>
-                <div class="missionCard__meta">Payloads are encoded and never executed.</div>
+                <div class="missionCard__meta">Input validation and output encoding checks.</div>
               </a>
               <a class="missionCard" href="#lab-auth">
                 <div class="missionCard__head">
@@ -89,21 +82,21 @@
                   <div class="missionCard__title">IDOR Lab</div>
                   <span class="badge badge--amber">MED</span>
                 </div>
-                <div class="missionCard__meta">Authorization checks with educational warnings.</div>
+                <div class="missionCard__meta">Authorization checks for object access.</div>
               </a>
               <a class="missionCard" href="#tools">
                 <div class="missionCard__head">
                   <div class="missionCard__title">Security Tools</div>
                   <span class="badge">GUIDE</span>
                 </div>
-                <div class="missionCard__meta">Interactive cards (no exploit steps).</div>
+                <div class="missionCard__meta">Interactive tool cards and output viewer.</div>
               </a>
               <a class="missionCard" href="#guide">
                 <div class="missionCard__head">
                   <div class="missionCard__title">Testing Guide</div>
                   <span class="badge">BURP</span>
                 </div>
-                <div class="missionCard__meta">High-level workflow guidance (authorized testing only).</div>
+                <div class="missionCard__meta">High-level workflow overview.</div>
               </a>
               <a class="missionCard" href="#security">
                 <div class="missionCard__head">
@@ -114,10 +107,10 @@
               </a>
               <a class="missionCard" href="#learning">
                 <div class="missionCard__head">
-                  <div class="missionCard__title">Learning Center</div>
+                  <div class="missionCard__title">Reference</div>
                   <span class="badge">DOCS</span>
                 </div>
-                <div class="missionCard__meta">Deep explanations + safe vs unsafe comparisons.</div>
+                <div class="missionCard__meta">Concept notes and patterns.</div>
               </a>
               <a class="missionCard" href="#defense">
                 <div class="missionCard__head">
@@ -166,14 +159,14 @@
                 <button class="btn btn--primary" type="submit">Simulate</button>
               </form>
               <div class="result result--terminal" id="simulateResult"></div>
-              <div class="hint">Processing is simulated with a safe delay and explanatory output.</div>
+              <div class="hint">Processing preview output.</div>
             </div>
           </section>
 
           <section class="panel" id="overview">
             <div class="panel__header">
               <div class="panel__title">Overview</div>
-              <p class="panel__subtitle">Progress, simulated detections, and secure coding score.</p>
+              <p class="panel__subtitle">Progress, detections, and secure coding score.</p>
             </div>
             <div class="panel__body stack">
               <div class="missionGrid missionGrid--2">
@@ -182,21 +175,21 @@
                     <div class="missionCard__title">Challenges Completed</div>
                     <span class="badge" id="widgetChallenges">0</span>
                   </div>
-                  <div class="missionCard__meta">Guided learning progress across SQLi, XSS, IDOR, and Sessions.</div>
+                  <div class="missionCard__meta">Progress across SQLi, XSS, IDOR, and Sessions.</div>
                 </div>
                 <div class="missionCard">
                   <div class="missionCard__head">
                     <div class="missionCard__title">Concepts Mastered</div>
                     <span class="badge" id="widgetConcepts">0</span>
                   </div>
-                  <div class="missionCard__meta">Concept mastery is based on completed challenges (safe).</div>
+                  <div class="missionCard__meta">Based on completed challenges.</div>
                 </div>
                 <div class="missionCard">
                   <div class="missionCard__head">
                     <div class="missionCard__title">Simulated Attempts</div>
                     <span class="badge badge--amber" id="widgetAttempts">0</span>
                   </div>
-                  <div class="missionCard__meta">Count of detected suspicious patterns and simulations (event-based).</div>
+                  <div class="missionCard__meta">Count of detected suspicious patterns (event-based).</div>
                 </div>
                 <div class="missionCard">
                   <div class="missionCard__head">
@@ -212,7 +205,7 @@
           <section class="panel" id="liveAnalyzer">
             <div class="panel__header">
               <div class="panel__title">Live Request Analyzer</div>
-              <p class="panel__subtitle">When you submit input, VulnLab explains the risk and the secure handling.</p>
+              <p class="panel__subtitle">Quick assessment of submitted input.</p>
             </div>
             <div class="panel__body stack">
               <div class="result result--terminal" id="liveAnalyzerBox"></div>
@@ -268,22 +261,18 @@
             </div>
             <div class="panel__body stack">
               <div class="result result--terminal" id="authLabResult"></div>
-              <div class="hint">
-                Secure Mode: prepared statements, bcrypt hashing, safe errors. Demo Mode: simulated warnings and unsafe-code examples only.
-              </div>
+              <div class="hint">Switch modes to compare behavior.</div>
             </div>
           </section>
 
           <section class="panel" id="lab-idor">
             <div class="panel__header">
               <div class="panel__title">IDOR Lab (Safe)</div>
-              <p class="panel__subtitle">
-                Try changing the id in <code>/profile?id=1</code>. VulnLab warns you and still returns only your own profile.
-              </p>
+              <p class="panel__subtitle">Server-side authorization is enforced for profile access.</p>
             </div>
             <div class="panel__body stack">
               <div id="idorResult" class="result result--terminal"></div>
-              <div class="hint">Profile data (authorized):</div>
+              <div class="hint">Profile data:</div>
               <div class="row">
                 <span class="chip">ID: <span id="profileId">...</span></span>
                 <span class="chip">Username: <span id="profileUsername">...</span></span>
@@ -291,7 +280,7 @@
 
               <form id="bioForm" class="stack">
                 <label class="hint">
-                  Profile bio (stored safely)
+                  Profile bio
                   <textarea name="bio" rows="3" maxlength="600"></textarea>
                 </label>
                 <button class="btn btn--ghost" type="submit">Update Bio</button>
@@ -302,8 +291,8 @@
 
           <section class="panel" id="tools">
             <div class="panel__header">
-              <div class="panel__title">Security Tools (Educational)</div>
-              <p class="panel__subtitle">Interactive cards. Concepts only; no exploit steps.</p>
+              <div class="panel__title">Security Tools</div>
+              <p class="panel__subtitle">Interactive cards.</p>
             </div>
             <div class="panel__body stack">
               <div class="missionGrid missionGrid--2">
@@ -312,7 +301,7 @@
                     <div class="missionCard__title">SQLMap</div>
                     <span class="badge badge--red">SQLi</span>
                   </div>
-                  <div class="missionCard__meta">SQL injection auditing (concept-level simulation only).</div>
+                  <div class="missionCard__meta">SQL injection auditing.</div>
                 </button>
                 <button class="missionCard" type="button" data-tool="nmap">
                   <div class="missionCard__head">

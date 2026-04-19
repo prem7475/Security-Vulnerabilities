@@ -18,13 +18,6 @@
       </div>
     </div>
 
-    <div class="banner" role="note">
-      <div class="banner__inner">
-        <span class="pill pill--warn">&#9888; FOR EDUCATIONAL USE ONLY &#8211; SAFE SIMULATION ENVIRONMENT</span>
-        <span class="banner__text">Admin view is protected. Demo Mode shows educational 'what if broken auth existed' messaging.</span>
-      </div>
-    </div>
-
     <header class="topbar">
       <a class="brand" href="/">
         <span class="brand__mark" aria-hidden="true"></span>
@@ -68,12 +61,12 @@
           <section class="panel">
             <div class="panel__header">
               <div class="panel__title">Admin Dashboard</div>
-              <p class="panel__subtitle">Live-ish stats derived from safe simulated event logs (plus dummy charts).</p>
+              <p class="panel__subtitle">Stats derived from event logs (plus dummy charts).</p>
             </div>
             <div class="panel__body stack">
               <div id="adminNotice" class="result result--terminal"></div>
               <div id="adminStats" class="result result--terminal"></div>
-              <div class="hint">Charts are dummy visuals based on aggregate counts (safe).</div>
+              <div class="hint">Charts are dummy visuals based on aggregate counts.</div>
               <canvas id="adminChart" width="740" height="220" class="chart" aria-label="Admin chart"></canvas>
             </div>
           </section>
@@ -81,7 +74,7 @@
           <section class="panel">
             <div class="panel__header">
               <div class="panel__title">Users (Safe View)</div>
-              <p class="panel__subtitle">Passwords are not shown; bcrypt hashes may be displayed for learning.</p>
+              <p class="panel__subtitle">Passwords are not shown; hashes may be displayed.</p>
             </div>
             <div class="panel__body">
               <div id="adminUsers" class="stack"></div>
@@ -91,7 +84,7 @@
           <section class="panel">
             <div class="panel__header">
               <div class="panel__title">Analytics (Dummy)</div>
-              <p class="panel__subtitle">High-level telemetry for the learning experience.</p>
+              <p class="panel__subtitle">High-level telemetry overview.</p>
             </div>
             <div class="panel__body">
               <div id="adminAnalytics" class="stack"></div>
