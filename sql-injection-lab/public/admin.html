@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VulnLab - Admin</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <canvas id="matrixBg" class="matrix" aria-hidden="true"></canvas>
+    <div class="bg__grid" aria-hidden="true"></div>
+    <div class="bg__scanlines" aria-hidden="true"></div>
+
+    <div class="boot" id="boot" aria-hidden="true">
+      <div class="boot__box">
+        <div class="boot__title">ADMIN CONSOLE</div>
+        <pre class="boot__lines" id="bootLines"></pre>
+      </div>
+    </div>
+
+    <div class="banner" role="note">
+      <div class="banner__inner">
+        <span class="pill pill--warn">&#9888; FOR EDUCATIONAL USE ONLY &#8211; SAFE SIMULATION ENVIRONMENT</span>
+        <span class="banner__text">Admin view is protected. Demo Mode shows educational 'what if broken auth existed' messaging.</span>
+      </div>
+    </div>
+
+    <header class="topbar">
+      <a class="brand" href="/">
+        <span class="brand__mark" aria-hidden="true"></span>
+        <span class="brand__name">VulnLab</span>
+        <span class="brand__sub">Admin Console</span>
+      </a>
+
+      <nav class="nav" aria-label="Top navigation">
+        <a class="nav__link" href="/dashboard">Dashboard</a>
+        <a class="nav__link nav__link--active" href="/admin">Admin</a>
+        <button class="nav__link nav__link--button" id="logoutBtn" type="button">Logout</button>
+      </nav>
+
+      <div class="controls">
+        <span class="chip" title="Simulated threat level based on detected patterns">
+          <span class="chip__dot" id="threatDot" aria-hidden="true"></span>
+          <span id="threatText">Threat: Low</span>
+        </span>
+        <span class="modeLabel" id="modeLabel">Mode: Demo</span>
+        <label class="switch" title="Toggle Demo/Secure mode">
+          <input id="modeToggle" type="checkbox" />
+          <span class="switch__track"></span>
+        </label>
+        <button class="btnIcon" id="soundToggle" type="button" title="Toggle sound effects">Sound: Off</button>
+      </div>
+    </header>
+
+    <main class="shell">
+      <div class="layout">
+        <aside class="sidebar">
+          <section class="terminalPanel">
+            <div class="terminalPanel__head">
+              <div class="terminalPanel__title">Terminal</div>
+              <div class="terminalPanel__status" id="terminalStatus">idle</div>
+            </div>
+            <pre class="terminalPanel__body" id="terminalLog"></pre>
+          </section>
+        </aside>
+
+        <section class="main">
+          <section class="panel">
+            <div class="panel__header">
+              <div class="panel__title">Admin Dashboard</div>
+              <p class="panel__subtitle">Live-ish stats derived from safe simulated event logs (plus dummy charts).</p>
+            </div>
+            <div class="panel__body stack">
+              <div id="adminNotice" class="result result--terminal"></div>
+              <div id="adminStats" class="result result--terminal"></div>
+              <div class="hint">Charts are dummy visuals based on aggregate counts (safe).</div>
+              <canvas id="adminChart" width="740" height="220" class="chart" aria-label="Admin chart"></canvas>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel__header">
+              <div class="panel__title">Users (Safe View)</div>
+              <p class="panel__subtitle">Passwords are not shown; bcrypt hashes may be displayed for learning.</p>
+            </div>
+            <div class="panel__body">
+              <div id="adminUsers" class="stack"></div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel__header">
+              <div class="panel__title">Analytics (Dummy)</div>
+              <p class="panel__subtitle">High-level telemetry for the learning experience.</p>
+            </div>
+            <div class="panel__body">
+              <div id="adminAnalytics" class="stack"></div>
+            </div>
+          </section>
+        </section>
+      </div>
+    </main>
+
+    <script src="/app.js" defer></script>
+  </body>
+</html>

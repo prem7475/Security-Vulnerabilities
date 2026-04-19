@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VulnLab</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <canvas id="matrixBg" class="matrix" aria-hidden="true"></canvas>
+    <div class="bg__grid" aria-hidden="true"></div>
+    <div class="bg__scanlines" aria-hidden="true"></div>
+
+    <div class="boot" id="boot" aria-hidden="true">
+      <div class="boot__box">
+        <div class="boot__title">SYSTEM BOOT</div>
+        <pre class="boot__lines" id="bootLines"></pre>
+      </div>
+    </div>
+
+    <div class="banner" role="note">
+      <div class="banner__inner">
+        <span class="pill pill--warn">&#9888; FOR EDUCATIONAL USE ONLY &#8211; SAFE SIMULATION ENVIRONMENT</span>
+        <span class="banner__text">Demo Mode simulates behaviors; Secure Mode demonstrates real defensive coding patterns.</span>
+      </div>
+    </div>
+
+    <header class="topbar">
+      <a class="brand" href="/">
+        <span class="brand__mark" aria-hidden="true"></span>
+        <span class="brand__name">VulnLab</span>
+        <span class="brand__sub">Premium Learning Console</span>
+      </a>
+
+      <nav class="nav" aria-label="Top navigation">
+        <a class="nav__link" href="/login">Login</a>
+        <a class="nav__link" href="/dashboard">Dashboard</a>
+      </nav>
+
+      <div class="controls">
+        <span class="modeLabel" id="modeLabel">Mode: Demo</span>
+        <label class="switch" title="Toggle Demo/Secure mode">
+          <input id="modeToggle" type="checkbox" />
+          <span class="switch__track"></span>
+        </label>
+        <button class="btnIcon" id="soundToggle" type="button" title="Toggle sound effects">Sound: Off</button>
+      </div>
+    </header>
+
+    <main class="shell">
+      <div class="layout">
+        <aside class="sidebar">
+          <section class="panel">
+            <div class="panel__header">
+              <div class="panel__title">Mission Board</div>
+              <p class="panel__subtitle">Choose a module. All attacks are simulated and explained safely.</p>
+            </div>
+            <div class="missionGrid">
+              <a class="missionCard" href="/dashboard">
+                <div class="missionCard__head">
+                  <div class="missionCard__title">SQL Injection Lab</div>
+                  <span class="badge badge--red">HIGH</span>
+                </div>
+                <div class="missionCard__meta">Pattern detection + safe simulation output.</div>
+              </a>
+              <a class="missionCard" href="/dashboard#lab-xss">
+                <div class="missionCard__head">
+                  <div class="missionCard__title">XSS Lab</div>
+                  <span class="badge badge--amber">MED</span>
+                </div>
+                <div class="missionCard__meta">Payloads are encoded and never executed.</div>
+              </a>
+              <a class="missionCard" href="/dashboard#lab-auth">
+                <div class="missionCard__head">
+                  <div class="missionCard__title">Authentication Lab</div>
+                  <span class="badge">INFO</span>
+                </div>
+                <div class="missionCard__meta">Secure sessions, bcrypt, and error handling.</div>
+              </a>
+              <a class="missionCard" href="/dashboard#lab-idor">
+                <div class="missionCard__head">
+                  <div class="missionCard__title">IDOR Lab</div>
+                  <span class="badge badge--amber">MED</span>
+                </div>
+                <div class="missionCard__meta">Authorization checks with educational warnings.</div>
+              </a>
+              <a class="missionCard" href="/dashboard#tools">
+                <div class="missionCard__head">
+                  <div class="missionCard__title">Security Tools</div>
+                  <span class="badge">GUIDE</span>
+                </div>
+                <div class="missionCard__meta">Learn how tools fit into workflows (no exploit steps).</div>
+              </a>
+              <a class="missionCard" href="/dashboard#learning">
+                <div class="missionCard__head">
+                  <div class="missionCard__title">Learning Center</div>
+                  <span class="badge">DOCS</span>
+                </div>
+                <div class="missionCard__meta">Explanations + safe vs unsafe code comparisons.</div>
+              </a>
+            </div>
+          </section>
+
+          <section class="terminalPanel">
+            <div class="terminalPanel__head">
+              <div class="terminalPanel__title">Terminal</div>
+              <div class="terminalPanel__status" id="terminalStatus">idle</div>
+            </div>
+            <pre class="terminalPanel__body" id="terminalLog"></pre>
+          </section>
+        </aside>
+
+        <section class="main">
+          <section class="panel">
+            <div class="panel__header">
+              <div class="panel__title">Welcome</div>
+              <p class="panel__subtitle">
+                A realistic cyberpunk interface for learning secure coding. Demo Mode simulates attacks; Secure Mode blocks them.
+              </p>
+            </div>
+            <div class="panel__body stack">
+              <div class="row">
+                <a class="btn btn--primary" href="/login">Enter Lab</a>
+                <a class="btn btn--ghost" href="/dashboard">Open Dashboard</a>
+              </div>
+              <div class="result result--terminal" id="homeStatus"></div>
+              <div class="hint">
+                Tip: Toggle Demo/Secure at the top-right. In Demo Mode, suspicious input triggers safe simulations and explanations.
+              </div>
+            </div>
+          </section>
+        </section>
+      </div>
+    </main>
+
+    <script src="/app.js" defer></script>
+  </body>
+</html>

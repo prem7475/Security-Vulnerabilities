@@ -1,0 +1,667 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VulnLab - Dashboard</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <canvas id="matrixBg" class="matrix" aria-hidden="true"></canvas>
+    <div class="bg__grid" aria-hidden="true"></div>
+    <div class="bg__scanlines" aria-hidden="true"></div>
+
+    <div class="boot" id="boot" aria-hidden="true">
+      <div class="boot__box">
+        <div class="boot__title">INITIALIZING MODULES</div>
+        <pre class="boot__lines" id="bootLines"></pre>
+      </div>
+    </div>
+
+    <div class="banner" role="note">
+      <div class="banner__inner">
+        <span class="pill pill--warn">&#9888; FOR EDUCATIONAL USE ONLY &#8211; SAFE SIMULATION ENVIRONMENT</span>
+        <span class="banner__text">Simulations + visualization only. No real exploit behavior is implemented.</span>
+      </div>
+    </div>
+
+    <header class="topbar">
+      <a class="brand" href="/">
+        <span class="brand__mark" aria-hidden="true"></span>
+        <span class="brand__name">VulnLab</span>
+        <span class="brand__sub">Learning Console</span>
+      </a>
+
+      <nav class="nav" aria-label="Top navigation">
+        <a class="nav__link nav__link--active" href="/dashboard">Dashboard</a>
+        <a class="nav__link" href="/admin" id="adminLink">Admin</a>
+        <button class="nav__link nav__link--button" id="logoutBtn" type="button">Logout</button>
+      </nav>
+
+      <div class="controls">
+        <span class="chip" title="Simulated threat level based on detected patterns">
+          <span class="chip__dot" id="threatDot" aria-hidden="true"></span>
+          <span id="threatText">Threat: Low</span>
+        </span>
+        <span class="chip" id="sessionPill">Session: ...</span>
+        <span class="chip pill--warn" id="demoPill" hidden>Demo: Simulations Enabled</span>
+        <span class="modeLabel" id="modeLabel">Mode: Demo</span>
+        <label class="switch" title="Toggle Demo/Secure mode">
+          <input id="modeToggle" type="checkbox" />
+          <span class="switch__track"></span>
+        </label>
+        <button class="btnIcon" id="soundToggle" type="button" title="Toggle sound effects">Sound: Off</button>
+      </div>
+    </header>
+
+    <main class="shell">
+      <div class="layout">
+        <aside class="sidebar">
+          <section class="panel">
+            <div class="panel__header">
+              <div class="panel__title">Mission Panels</div>
+              <p class="panel__subtitle">User: <span id="meUser">loading...</span></p>
+            </div>
+            <div class="missionGrid">
+              <a class="missionCard" href="#lab-sqli">
+                <div class="missionCard__head">
+                  <div class="missionCard__title">SQL Injection Lab</div>
+                  <span class="badge badge--red">HIGH</span>
+                </div>
+                <div class="missionCard__meta">Detection + safe query simulation output.</div>
+              </a>
+              <a class="missionCard" href="#lab-xss">
+                <div class="missionCard__head">
+                  <div class="missionCard__title">XSS Lab</div>
+                  <span class="badge badge--amber">MED</span>
+                </div>
+                <div class="missionCard__meta">Payloads are encoded and never executed.</div>
+              </a>
+              <a class="missionCard" href="#lab-auth">
+                <div class="missionCard__head">
+                  <div class="missionCard__title">Authentication Lab</div>
+                  <span class="badge">INFO</span>
+                </div>
+                <div class="missionCard__meta">Sessions, hashing, and safe error handling.</div>
+              </a>
+              <a class="missionCard" href="#lab-idor">
+                <div class="missionCard__head">
+                  <div class="missionCard__title">IDOR Lab</div>
+                  <span class="badge badge--amber">MED</span>
+                </div>
+                <div class="missionCard__meta">Authorization checks with educational warnings.</div>
+              </a>
+              <a class="missionCard" href="#tools">
+                <div class="missionCard__head">
+                  <div class="missionCard__title">Security Tools</div>
+                  <span class="badge">GUIDE</span>
+                </div>
+                <div class="missionCard__meta">Interactive cards (no exploit steps).</div>
+              </a>
+              <a class="missionCard" href="#guide">
+                <div class="missionCard__head">
+                  <div class="missionCard__title">Testing Guide</div>
+                  <span class="badge">BURP</span>
+                </div>
+                <div class="missionCard__meta">High-level workflow guidance (authorized testing only).</div>
+              </a>
+              <a class="missionCard" href="#security">
+                <div class="missionCard__head">
+                  <div class="missionCard__title">Security Analyzer</div>
+                  <span class="badge">SCAN</span>
+                </div>
+                <div class="missionCard__meta">Automated secure coding feedback for this project.</div>
+              </a>
+              <a class="missionCard" href="#learning">
+                <div class="missionCard__head">
+                  <div class="missionCard__title">Learning Center</div>
+                  <span class="badge">DOCS</span>
+                </div>
+                <div class="missionCard__meta">Deep explanations + safe vs unsafe comparisons.</div>
+              </a>
+              <a class="missionCard" href="#defense">
+                <div class="missionCard__head">
+                  <div class="missionCard__title">Defense & Protection</div>
+                  <span class="badge">HARDEN</span>
+                </div>
+                <div class="missionCard__meta">Practical defensive checklists and patterns.</div>
+              </a>
+              <a class="missionCard" href="#challenges">
+                <div class="missionCard__head">
+                  <div class="missionCard__title">Challenge Mode</div>
+                  <span class="badge badge--amber">QUIZ</span>
+                </div>
+                <div class="missionCard__meta">Interactive, safe mini-missions (no exploit steps).</div>
+              </a>
+            </div>
+          </section>
+
+          <section class="terminalPanel">
+            <div class="terminalPanel__head">
+              <div class="terminalPanel__title">Terminal</div>
+              <div class="terminalPanel__status" id="terminalStatus">idle</div>
+            </div>
+            <pre class="terminalPanel__body" id="terminalLog"></pre>
+          </section>
+        </aside>
+
+        <section class="main">
+          <section class="panel">
+            <div class="panel__header">
+              <div class="panel__title">Demo Attack Simulation Engine</div>
+              <p class="panel__subtitle">
+                Enter suspicious input. Demo Mode will explain what would happen in a vulnerable system. Secure Mode shows the fix.
+              </p>
+            </div>
+            <div class="panel__body stack">
+              <form id="simulateForm" class="row">
+                <select name="context" aria-label="Simulation context">
+                  <option value="login">Auth (login)</option>
+                  <option value="search">SQL search</option>
+                  <option value="comment">XSS comment</option>
+                  <option value="bio">Stored bio</option>
+                  <option value="idor">IDOR profile</option>
+                </select>
+                <input class="input" name="input" type="text" placeholder="Enter suspicious input to simulate..." />
+                <button class="btn btn--primary" type="submit">Simulate</button>
+              </form>
+              <div class="result result--terminal" id="simulateResult"></div>
+              <div class="hint">Processing is simulated with a safe delay and explanatory output.</div>
+            </div>
+          </section>
+
+          <section class="panel" id="overview">
+            <div class="panel__header">
+              <div class="panel__title">Overview</div>
+              <p class="panel__subtitle">Progress, simulated detections, and secure coding score.</p>
+            </div>
+            <div class="panel__body stack">
+              <div class="missionGrid missionGrid--2">
+                <div class="missionCard">
+                  <div class="missionCard__head">
+                    <div class="missionCard__title">Challenges Completed</div>
+                    <span class="badge" id="widgetChallenges">0</span>
+                  </div>
+                  <div class="missionCard__meta">Guided learning progress across SQLi, XSS, IDOR, and Sessions.</div>
+                </div>
+                <div class="missionCard">
+                  <div class="missionCard__head">
+                    <div class="missionCard__title">Concepts Mastered</div>
+                    <span class="badge" id="widgetConcepts">0</span>
+                  </div>
+                  <div class="missionCard__meta">Concept mastery is based on completed challenges (safe).</div>
+                </div>
+                <div class="missionCard">
+                  <div class="missionCard__head">
+                    <div class="missionCard__title">Simulated Attempts</div>
+                    <span class="badge badge--amber" id="widgetAttempts">0</span>
+                  </div>
+                  <div class="missionCard__meta">Count of detected suspicious patterns and simulations (event-based).</div>
+                </div>
+                <div class="missionCard">
+                  <div class="missionCard__head">
+                    <div class="missionCard__title">Security Score</div>
+                    <span class="badge" id="widgetScore">--</span>
+                  </div>
+                  <div class="missionCard__meta">Automated secure coding feedback (parameterization, hashing, authz, CSP).</div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel" id="liveAnalyzer">
+            <div class="panel__header">
+              <div class="panel__title">Live Request Analyzer</div>
+              <p class="panel__subtitle">When you submit input, VulnLab explains the risk and the secure handling.</p>
+            </div>
+            <div class="panel__body stack">
+              <div class="result result--terminal" id="liveAnalyzerBox"></div>
+            </div>
+          </section>
+
+          <section class="panel" id="lab-sqli">
+            <div class="panel__header">
+              <div class="panel__title">SQL Injection Lab (Safe)</div>
+              <p class="panel__subtitle">
+                Search and lookup use prepared statements. Demo Mode flags injection patterns and shows unsafe query examples.
+              </p>
+            </div>
+            <div class="panel__body stack">
+              <div class="row">
+                <form id="searchForm" class="row rowFlex">
+                  <input class="input" name="term" type="text" placeholder="Search users by username..." />
+                  <button class="btn btn--ghost" type="submit">Search</button>
+                </form>
+              </div>
+              <div id="searchResult" class="result result--terminal"></div>
+
+              <div class="hint">User lookup endpoint (safe): shows detection messaging in Demo Mode.</div>
+              <form id="lookupForm" class="row">
+                <input class="input" name="username" type="text" placeholder="Lookup username (exact)..." />
+                <button class="btn btn--ghost" type="submit">Lookup</button>
+              </form>
+              <div id="lookupResult" class="result result--terminal"></div>
+            </div>
+          </section>
+
+          <section class="panel" id="lab-xss">
+            <div class="panel__header">
+              <div class="panel__title">XSS Lab (Safe)</div>
+              <p class="panel__subtitle">
+                Comments are stored as plain text and rendered using textContent. Demo Mode flags payloads; Secure Mode blocks them.
+              </p>
+            </div>
+            <div class="panel__body stack">
+              <form id="commentForm" class="row">
+                <input class="input" name="content" type="text" placeholder="Leave a comment..." maxlength="500" />
+                <button class="btn btn--primary" type="submit">Post</button>
+              </form>
+              <div id="commentResult" class="result result--terminal"></div>
+              <div id="commentsList" class="stack"></div>
+            </div>
+          </section>
+
+          <section class="panel" id="lab-auth">
+            <div class="panel__header">
+              <div class="panel__title">Authentication Lab</div>
+              <p class="panel__subtitle">Sessions use HttpOnly + SameSite cookies. Passwords are verified with bcrypt hashing.</p>
+            </div>
+            <div class="panel__body stack">
+              <div class="result result--terminal" id="authLabResult"></div>
+              <div class="hint">
+                Secure Mode: prepared statements, bcrypt hashing, safe errors. Demo Mode: simulated warnings and unsafe-code examples only.
+              </div>
+            </div>
+          </section>
+
+          <section class="panel" id="lab-idor">
+            <div class="panel__header">
+              <div class="panel__title">IDOR Lab (Safe)</div>
+              <p class="panel__subtitle">
+                Try changing the id in <code>/profile?id=1</code>. VulnLab warns you and still returns only your own profile.
+              </p>
+            </div>
+            <div class="panel__body stack">
+              <div id="idorResult" class="result result--terminal"></div>
+              <div class="hint">Profile data (authorized):</div>
+              <div class="row">
+                <span class="chip">ID: <span id="profileId">...</span></span>
+                <span class="chip">Username: <span id="profileUsername">...</span></span>
+              </div>
+
+              <form id="bioForm" class="stack">
+                <label class="hint">
+                  Profile bio (stored safely)
+                  <textarea name="bio" rows="3" maxlength="600"></textarea>
+                </label>
+                <button class="btn btn--ghost" type="submit">Update Bio</button>
+              </form>
+              <div id="bioResult" class="result result--terminal"></div>
+            </div>
+          </section>
+
+          <section class="panel" id="tools">
+            <div class="panel__header">
+              <div class="panel__title">Security Tools (Educational)</div>
+              <p class="panel__subtitle">Interactive cards. Concepts only; no exploit steps.</p>
+            </div>
+            <div class="panel__body stack">
+              <div class="missionGrid missionGrid--2">
+                <button class="missionCard" type="button" data-tool="sqlmap">
+                  <div class="missionCard__head">
+                    <div class="missionCard__title">SQLMap</div>
+                    <span class="badge badge--red">SQLi</span>
+                  </div>
+                  <div class="missionCard__meta">SQL injection auditing (concept-level simulation only).</div>
+                </button>
+                <button class="missionCard" type="button" data-tool="nmap">
+                  <div class="missionCard__head">
+                    <div class="missionCard__title">Nmap</div>
+                    <span class="badge">SCAN</span>
+                  </div>
+                  <div class="missionCard__meta">Network discovery and exposure assessment (simulated output).</div>
+                </button>
+                <button class="missionCard" type="button" data-tool="burp">
+                  <div class="missionCard__head">
+                    <div class="missionCard__title">Burp Suite</div>
+                    <span class="badge">PROXY</span>
+                  </div>
+                  <div class="missionCard__meta">Web proxy for defensive validation of requests/cookies.</div>
+                </button>
+                <button class="missionCard" type="button" data-tool="wireshark">
+                  <div class="missionCard__head">
+                    <div class="missionCard__title">Wireshark</div>
+                    <span class="badge">PCAP</span>
+                  </div>
+                  <div class="missionCard__meta">Packet analysis for troubleshooting and investigations.</div>
+                </button>
+                <button class="missionCard" type="button" data-tool="metasploit">
+                  <div class="missionCard__head">
+                    <div class="missionCard__title">Metasploit Framework</div>
+                    <span class="badge badge--amber">FRAME</span>
+                  </div>
+                  <div class="missionCard__meta">Framework overview for controlled lab workflows (no exploit steps).</div>
+                </button>
+                <button class="missionCard" type="button" data-tool="john">
+                  <div class="missionCard__head">
+                    <div class="missionCard__title">John the Ripper</div>
+                    <span class="badge badge--amber">AUDIT</span>
+                  </div>
+                  <div class="missionCard__meta">Password auditing concepts (no brute-force simulation).</div>
+                </button>
+                <button class="missionCard" type="button" data-tool="hashcat">
+                  <div class="missionCard__head">
+                    <div class="missionCard__title">Hashcat</div>
+                    <span class="badge badge--amber">AUDIT</span>
+                  </div>
+                  <div class="missionCard__meta">Hash auditing concepts and defenses (simulated).</div>
+                </button>
+                <button class="missionCard" type="button" data-tool="nikto">
+                  <div class="missionCard__head">
+                    <div class="missionCard__title">Nikto</div>
+                    <span class="badge">WEB</span>
+                  </div>
+                  <div class="missionCard__meta">Web server misconfiguration auditing (simulated output).</div>
+                </button>
+                <button class="missionCard" type="button" data-tool="zap">
+                  <div class="missionCard__head">
+                    <div class="missionCard__title">OWASP ZAP</div>
+                    <span class="badge">SCAN</span>
+                  </div>
+                  <div class="missionCard__meta">Web app scanning concepts with defensive focus.</div>
+                </button>
+                <button class="missionCard" type="button" data-tool="aircrack">
+                  <div class="missionCard__head">
+                    <div class="missionCard__title">Aircrack-ng</div>
+                    <span class="badge badge--red">WIFI</span>
+                  </div>
+                  <div class="missionCard__meta">High-level wireless auditing concepts only.</div>
+                </button>
+              </div>
+
+              <div class="terminalPanel">
+                <div class="terminalPanel__head">
+                  <div class="terminalPanel__title">Tool Simulation Panel</div>
+                  <div class="terminalPanel__status" id="toolSimStatus">click a tool</div>
+                </div>
+                <pre class="terminalPanel__body" id="toolSimLog"></pre>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel" id="guide">
+            <div class="panel__header">
+              <div class="panel__title">Testing Guide (Burp Workflow)</div>
+              <p class="panel__subtitle">High-level, defensive testing steps. Do not test systems without permission.</p>
+            </div>
+            <div class="panel__body stack">
+              <div class="result result--terminal" id="guideIntro"></div>
+
+              <div class="missionGrid missionGrid--2">
+                <div class="missionCard">
+                  <div class="missionCard__head">
+                    <div class="missionCard__title">/login</div>
+                    <span class="badge">AUTH</span>
+                  </div>
+                  <div class="missionCard__meta">
+                    1) Intercept request  2) Send to Repeater  3) Change fields slightly  4) Compare status codes/response sizes. Observe
+                    cookie flags and error messaging.
+                  </div>
+                </div>
+                <div class="missionCard">
+                  <div class="missionCard__head">
+                    <div class="missionCard__title">/api/search</div>
+                    <span class="badge">SQL</span>
+                  </div>
+                  <div class="missionCard__meta">
+                    1) Intercept search request  2) Replay with unusual text  3) Compare responses between Demo and Secure mode. Observe
+                    whether the server returns safe, consistent results.
+                  </div>
+                </div>
+                <div class="missionCard">
+                  <div class="missionCard__head">
+                    <div class="missionCard__title">/profile?id=</div>
+                    <span class="badge">AUTHZ</span>
+                  </div>
+                  <div class="missionCard__meta">
+                    1) Request your profile  2) Change the id value  3) Compare the response. Observe whether authorization is enforced
+                    server-side (it should be).
+                  </div>
+                </div>
+                <div class="missionCard">
+                  <div class="missionCard__head">
+                    <div class="missionCard__title">/api/comments</div>
+                    <span class="badge">XSS</span>
+                  </div>
+                  <div class="missionCard__meta">
+                    1) Submit a comment  2) Replay with special characters  3) Observe safe encoding and CSP behavior. Note: VulnLab does not
+                    execute scripts.
+                  </div>
+                </div>
+                <div class="missionCard">
+                  <div class="missionCard__head">
+                    <div class="missionCard__title">/admin</div>
+                    <span class="badge badge--red">ADMIN</span>
+                  </div>
+                  <div class="missionCard__meta">
+                    1) Access as non-admin  2) Observe access denied  3) Access as admin  4) Observe stats and event telemetry.
+                  </div>
+                </div>
+              </div>
+
+              <div class="hint">
+                What to observe: status codes, response length changes, safe error messages, authorization behavior, and differences between Demo
+                and Secure mode.
+              </div>
+            </div>
+          </section>
+
+          <section class="panel" id="security">
+            <div class="panel__header">
+              <div class="panel__title">Security Analyzer</div>
+              <p class="panel__subtitle">Automated secure coding feedback for the current backend (safe, local analysis).</p>
+            </div>
+            <div class="panel__body stack">
+              <div class="row">
+                <button class="btn btn--primary" id="runAnalyzerBtn" type="button">Run Analyzer</button>
+                <span class="chip">Score: <span id="securityScoreText">--</span></span>
+              </div>
+              <div class="result result--terminal" id="analyzerSummary"></div>
+              <div class="missionGrid missionGrid--2" id="analyzerFindings"></div>
+              <div class="hint">This is a static/self-check style report. It does not attempt any real exploitation.</div>
+            </div>
+          </section>
+
+          <section class="panel" id="learning">
+            <div class="panel__header">
+              <div class="panel__title">Learning Center</div>
+              <p class="panel__subtitle">What it is, why it works, impact, and how to fix it (secure coding).</p>
+            </div>
+            <div class="panel__body stack">
+              <div class="result result--terminal" id="learningIntro"></div>
+
+              <div class="panel">
+                <div class="panel__header">
+                  <div class="panel__title">SQL Injection</div>
+                  <p class="panel__subtitle">Unsafe vs safe query building.</p>
+                </div>
+                <div class="panel__body stack">
+                  <div class="hint">Why it works: concatenation lets input change the structure of the query.</div>
+                  <pre class="result result--terminal">UNSAFE (example only):
+const q = "SELECT * FROM users WHERE u='" + user + "' AND p='" + pass + "'";
+
+SAFE:
+db.get("SELECT * FROM users WHERE u=? AND p=?", [user, pass]);</pre>
+                  <div class="hint">Prevention: prepared statements, validation, least privilege, and monitoring.</div>
+                </div>
+              </div>
+
+              <div class="panel">
+                <div class="panel__header">
+                  <div class="panel__title">XSS</div>
+                  <p class="panel__subtitle">Stored, reflected, and DOM-based concepts.</p>
+                </div>
+                <div class="panel__body stack">
+                  <div class="hint">Impact: session theft, UI redress, malicious actions as the user.</div>
+                  <pre class="result result--terminal">SAFE RENDERING:
+// Use textContent (or server-side encoding) for untrusted input.
+el.textContent = userInput;
+
+DEFENSE-IN-DEPTH:
+Content-Security-Policy (CSP) + output encoding + avoid dangerous sinks.</pre>
+                </div>
+              </div>
+
+              <div class="panel">
+                <div class="panel__header">
+                  <div class="panel__title">Authentication + Sessions</div>
+                  <p class="panel__subtitle">Weak vs strong authentication and session handling.</p>
+                </div>
+                <div class="panel__body stack">
+                  <pre class="result result--terminal">GOOD PRACTICE:
+- Hash passwords (bcrypt/argon2)
+- Use HttpOnly + SameSite cookies
+- Expire sessions, rotate identifiers, invalidate on logout</pre>
+                </div>
+              </div>
+
+              <div class="panel">
+                <div class="panel__header">
+                  <div class="panel__title">IDOR (Access Control)</div>
+                  <p class="panel__subtitle">Authorization checks on every object access.</p>
+                </div>
+                <div class="panel__body stack">
+                  <pre class="result result--terminal">SAFE PATTERN:
+// Never trust the id from the URL alone.
+// Enforce ownership/role checks server-side for each request.</pre>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel" id="defense">
+            <div class="panel__header">
+              <div class="panel__title">Defense & Protection</div>
+              <p class="panel__subtitle">Practical defensive guidance you can apply to real projects.</p>
+            </div>
+            <div class="panel__body stack">
+              <div class="result result--terminal" id="defenseIntro"></div>
+
+              <div class="missionGrid missionGrid--2">
+                <div class="missionCard">
+                  <div class="missionCard__head">
+                    <div class="missionCard__title">Input Validation</div>
+                    <span class="badge">APP</span>
+                  </div>
+                  <div class="missionCard__meta">
+                    Validate types, lengths, and allow-lists. Treat validation as data-shaping, not security alone. Pair with parameterization.
+                  </div>
+                </div>
+                <div class="missionCard">
+                  <div class="missionCard__head">
+                    <div class="missionCard__title">Secure Authentication</div>
+                    <span class="badge">AUTH</span>
+                  </div>
+                  <div class="missionCard__meta">
+                    Hash passwords (bcrypt/argon2), rate-limit, add MFA, and monitor for credential stuffing. Use safe error messages.
+                  </div>
+                </div>
+                <div class="missionCard">
+                  <div class="missionCard__head">
+                    <div class="missionCard__title">Authorization</div>
+                    <span class="badge">AUTHZ</span>
+                  </div>
+                  <div class="missionCard__meta">
+                    Enforce ownership/role checks server-side for every object access. Never trust IDs from the URL alone.
+                  </div>
+                </div>
+                <div class="missionCard">
+                  <div class="missionCard__head">
+                    <div class="missionCard__title">Output Encoding + CSP</div>
+                    <span class="badge">XSS</span>
+                  </div>
+                  <div class="missionCard__meta">
+                    Render untrusted input as text, avoid dangerous sinks, and use a strict CSP to reduce XSS impact.
+                  </div>
+                </div>
+                <div class="missionCard">
+                  <div class="missionCard__head">
+                    <div class="missionCard__title">Network Hardening</div>
+                    <span class="badge">NET</span>
+                  </div>
+                  <div class="missionCard__meta">
+                    Reduce exposed services, segment networks, apply firewall rules, and keep an inventory of what's reachable.
+                  </div>
+                </div>
+                <div class="missionCard">
+                  <div class="missionCard__head">
+                    <div class="missionCard__title">Logging & Monitoring</div>
+                    <span class="badge">OBS</span>
+                  </div>
+                  <div class="missionCard__meta">
+                    Log security-relevant events, detect anomalies, and alert. Correlate auth, input flags, and access denials.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel" id="challenges">
+            <div class="panel__header">
+              <div class="panel__title">Challenges</div>
+              <p class="panel__subtitle">Guided missions with hints, expected outcomes, XP, and safe simulations.</p>
+            </div>
+            <div class="panel__body stack">
+              <div class="row">
+                <span class="chip"><span class="chip__dot" aria-hidden="true"></span><span id="xpLevel">Level 1</span></span>
+                <span class="chip" id="xpText">XP: 0</span>
+                <span class="chip" id="challengeProgressText">Progress: 0/4</span>
+                <button class="btn btn--ghost" id="challengeReset" type="button">Reset Progress</button>
+              </div>
+              <div class="progress" aria-label="XP progress">
+                <div class="progress__bar" id="xpBar" style="width: 0%"></div>
+              </div>
+
+              <div class="challengeLayout">
+                <div class="stack">
+                  <div class="hint">Select a challenge:</div>
+                  <div class="missionGrid" id="challengeList"></div>
+                </div>
+
+                <div class="stack">
+                  <div class="result result--terminal" id="challengeDetail"></div>
+                  <div class="row">
+                    <button class="btn btn--primary" id="hintBtn" type="button">Reveal Hint</button>
+                    <button class="btn btn--ghost" id="markUnderstoodBtn" type="button">Mark Concept Understood</button>
+                  </div>
+                  <div class="result result--terminal" id="challengeHintBox"></div>
+                  <div class="result result--terminal" id="challengeOutcomeBox"></div>
+                  <div class="result result--terminal" id="challengeCompletionBox"></div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </section>
+      </div>
+    </main>
+
+    <div class="levelUp" id="levelUp" aria-hidden="true">
+      <div class="levelUp__inner">
+        <div class="levelUp__title">LEVEL UP</div>
+        <div class="levelUp__sub" id="levelUpSub">New level reached</div>
+      </div>
+    </div>
+
+    <div class="modal" id="toolModal" aria-hidden="true">
+      <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="toolModalTitle">
+        <div class="modal__head">
+          <h2 class="modal__title" id="toolModalTitle">Tool</h2>
+          <button class="btn btn--ghost" id="toolModalClose" type="button">Close</button>
+        </div>
+        <div class="modal__body" id="toolModalBody"></div>
+      </div>
+    </div>
+
+    <script src="/app.js" defer></script>
+  </body>
+</html>
