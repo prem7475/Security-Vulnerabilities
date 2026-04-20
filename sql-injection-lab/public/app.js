@@ -56,6 +56,64 @@ async function simulate(context, input) {
   }
 }
 
+async function assetExists(url) {
+  try {
+    const res = await fetch(url, { method: "HEAD", cache: "no-store", credentials: "same-origin" });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+async function wireVideoAssets() {
+  const bgVideo = qs("#bgVideo");
+  if (bgVideo && !bgVideo.src) {
+    const candidate = (await assetExists("/bg.webm")) ? "/bg.webm" : (await assetExists("/bg.mp4")) ? "/bg.mp4" : "";
+    if (candidate) {
+      bgVideo.src = candidate;
+      bgVideo.addEventListener(
+        "canplay",
+        () => {
+          document.body.classList.add("hasVideoBg");
+          bgVideo.play().catch(() => {});
+        },
+        { once: true }
+      );
+      bgVideo.addEventListener(
+        "error",
+        () => {
+          document.body.classList.remove("hasVideoBg");
+        },
+        { once: true }
+      );
+    }
+  }
+
+  const introVideo = qs("#introVideo");
+  if (introVideo && !introVideo.src) {
+    const candidate =
+      (await assetExists("/intro.webm")) ? "/intro.webm" : (await assetExists("/intro.mp4")) ? "/intro.mp4" : "";
+    if (candidate) {
+      introVideo.src = candidate;
+      introVideo.addEventListener(
+        "canplay",
+        () => {
+          document.body.classList.add("hasIntroVideo");
+          introVideo.play().catch(() => {});
+        },
+        { once: true }
+      );
+      introVideo.addEventListener(
+        "error",
+        () => {
+          document.body.classList.remove("hasIntroVideo");
+        },
+        { once: true }
+      );
+    }
+  }
+}
+
 function page() {
   const p = window.location.pathname;
   if (p === "/") return "home";
@@ -290,6 +348,13 @@ function modeUi(mode) {
   if (demoPill) demoPill.hidden = mode !== "demo";
 }
 
+function getModeLabel() {
+  const label = qs("#modeLabel");
+  const text = String(label?.textContent || "");
+  const m = text.match(/Mode:\s*(Secure|Demo)/i);
+  return m ? m[1].toLowerCase() : "unknown";
+}
+
 async function loadMode() {
   try {
     const data = await api("/api/mode");
@@ -331,6 +396,75 @@ function wireSoundToggle() {
     btn.textContent = `Sound: ${on ? "On" : "Off"}`;
     Terminal.write(`sound ${on ? "enabled" : "disabled"}`);
   });
+}
+
+function wireTerminalClear() {
+  const btn = qs("#terminalClearBtn");
+  if (!btn) return;
+  btn.addEventListener("click", () => {
+    Terminal.clear();
+    Terminal.status("idle");
+    Sound.beep({ freq: 480, dur: 0.05, gain: 0.016 });
+  });
+}
+
+const BookIntro = (() => {
+  const key = "vl_intro_seen";
+  let intro = null;
+  let btn = null;
+  let closing = false;
+
+  function isSeen() {
+    try {
+      return window.sessionStorage && window.sessionStorage.getItem(key) === "1";
+    } catch {
+      return false;
+    }
+  }
+
+  function openIfNeeded() {
+    if (!intro) return;
+    if (isSeen()) return;
+    intro.classList.add("bookIntro--open");
+    intro.setAttribute("aria-hidden", "false");
+  }
+
+  async function close() {
+    if (!intro) return;
+    if (closing) return;
+    if (!intro.classList.contains("bookIntro--open")) return;
+    closing = true;
+    try {
+      if (window.sessionStorage) window.sessionStorage.setItem(key, "1");
+    } catch {}
+    intro.classList.add("bookIntro--closing");
+    Sound.beep({ freq: 720, dur: 0.06, gain: 0.018 });
+    await sleep(640);
+    intro.classList.remove("bookIntro--open", "bookIntro--closing");
+    intro.setAttribute("aria-hidden", "true");
+    closing = false;
+  }
+
+  function bind() {
+    intro = qs("#bookIntro");
+    if (!intro) return;
+    btn = qs("#openBookBtn");
+    if (btn) btn.addEventListener("click", close);
+    intro.addEventListener("click", (e) => {
+      if (e.target === intro) close();
+    });
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") close();
+    });
+  }
+
+  return { bind, openIfNeeded, close };
+})();
+
+function submitForm(form) {
+  if (!form) return;
+  if (typeof form.requestSubmit === "function") form.requestSubmit();
+  else form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
 }
 
 // ---- Shared actions
@@ -462,6 +596,224 @@ function wireQuickFill() {
   btnTest?.addEventListener("click", () => fill("test", "test123"));
 }
 
+function initDashboardEmptyStates() {
+  setText(qs("#simulateResult"), "Use Analyze or a quick sample to begin.");
+  setText(qs("#liveAnalyzerBox"), "Waiting for activity…");
+  setText(qs("#searchResult"), "Search results appear here.");
+  setText(qs("#lookupResult"), "Lookup results appear here.");
+  setText(qs("#commentResult"), "Post a comment to see status here.");
+  setText(qs("#bioResult"), "Update your bio to see status here.");
+  setText(qs("#idorResult"), "Open /profile or /profile?id=… to see authorization behavior.");
+}
+
+function wireDashboardQuickActions() {
+  const simulateForm = qs("#simulateForm");
+  const simulateCtx = qs("#simulateForm select[name='context']");
+  const simulateInput = qs("#simulateInput");
+
+  function fillSim(context, value) {
+    if (!simulateForm || !simulateCtx || !simulateInput) return;
+    simulateCtx.value = context;
+    simulateInput.value = value;
+    simulateInput.focus();
+    submitForm(simulateForm);
+  }
+
+  qs("#simSampleSql")?.addEventListener("click", () => fillSim("login", "[[SIM_SQLI]]"));
+  qs("#simSampleXss")?.addEventListener("click", () => fillSim("comment", "[[SIM_XSS]]"));
+  qs("#simClearBtn")?.addEventListener("click", () => {
+    if (simulateInput) simulateInput.value = "";
+    setText(qs("#simulateResult"), "Use Analyze or a quick sample to begin.");
+    setText(qs("#liveAnalyzerBox"), "Waiting for activity…");
+  });
+
+  const searchForm = qs("#searchForm");
+  const searchTerm = qs("#searchTerm");
+  qs("#searchSampleNormal")?.addEventListener("click", () => {
+    if (!searchTerm) return;
+    searchTerm.value = "admin";
+    searchTerm.focus();
+    submitForm(searchForm);
+  });
+  qs("#searchSampleFlag")?.addEventListener("click", () => {
+    if (!searchTerm) return;
+    searchTerm.value = "[[SIM_SQLI]]";
+    searchTerm.focus();
+    submitForm(searchForm);
+  });
+  qs("#searchClearBtn")?.addEventListener("click", () => {
+    if (searchTerm) searchTerm.value = "";
+    setText(qs("#searchResult"), "Search results appear here.");
+  });
+
+  const lookupForm = qs("#lookupForm");
+  const lookupUsername = qs("#lookupUsername");
+  qs("#lookupSampleNormal")?.addEventListener("click", () => {
+    if (!lookupUsername) return;
+    lookupUsername.value = "user";
+    lookupUsername.focus();
+    submitForm(lookupForm);
+  });
+  qs("#lookupSampleFlag")?.addEventListener("click", () => {
+    if (!lookupUsername) return;
+    lookupUsername.value = "[[SIM_SQLI]]";
+    lookupUsername.focus();
+    submitForm(lookupForm);
+  });
+  qs("#lookupClearBtn")?.addEventListener("click", () => {
+    if (lookupUsername) lookupUsername.value = "";
+    setText(qs("#lookupResult"), "Lookup results appear here.");
+  });
+
+  const commentContent = qs("#commentContent");
+  qs("#commentSampleNormal")?.addEventListener("click", () => {
+    if (!commentContent) return;
+    commentContent.value = "hello";
+    commentContent.focus();
+  });
+  qs("#commentSampleFlag")?.addEventListener("click", () => {
+    if (!commentContent) return;
+    commentContent.value = "[[SIM_XSS]]";
+    commentContent.focus();
+  });
+  qs("#commentClearBtn")?.addEventListener("click", () => {
+    if (commentContent) commentContent.value = "";
+    setText(qs("#commentResult"), "Post a comment to see status here.");
+  });
+
+  const bioForm = qs("#bioForm");
+  const bioText = qs("#bioText");
+  qs("#bioSampleNormal")?.addEventListener("click", () => {
+    if (!bioText) return;
+    bioText.value = "bio updated";
+    bioText.focus();
+  });
+  qs("#bioSampleFlag")?.addEventListener("click", () => {
+    if (!bioText) return;
+    bioText.value = "[[SIM_XSS]]";
+    bioText.focus();
+    submitForm(bioForm);
+  });
+  qs("#bioClearBtn")?.addEventListener("click", () => {
+    if (bioText) bioText.value = "";
+    setText(qs("#bioResult"), "Update your bio to see status here.");
+  });
+}
+
+function wireBookPages() {
+  const host = qs("#bookPages");
+  const main = qs(".main");
+  if (!host || !main) return;
+
+  const tocLinks = qsa(".sidebar a.missionCard").filter((a) => (a.getAttribute("href") || "").startsWith("#"));
+
+  const pageConfig = {
+    cover: { panels: ["simulate", "liveAnalyzer", "overview"] },
+    "lab-sqli": { panels: ["lab-sqli"] },
+    "lab-xss": { panels: ["lab-xss"] },
+    "lab-auth": { panels: ["lab-auth"] },
+    "lab-idor": { panels: ["lab-idor"] },
+    tools: { panels: ["tools"] },
+    guide: { panels: ["guide"] },
+    security: { panels: ["security"] },
+    learning: { panels: ["learning"] },
+    defense: { panels: ["defense"] },
+    challenges: { panels: ["challenges"] },
+  };
+
+  const panelToPage = new Map();
+  for (const [pid, cfg] of Object.entries(pageConfig)) {
+    for (const panelId of cfg.panels) panelToPage.set(panelId, pid);
+  }
+
+  const knownPanels = new Set(Array.from(panelToPage.keys()));
+  const blocks = Array.from(host.children).filter((n) => n && n.nodeType === 1);
+  for (const b of blocks) b.classList.add("bookPage");
+
+  let activePage = null;
+  let flipTimer = null;
+
+  function normalize(raw) {
+    const id = String(raw || "").replace(/^#/, "").trim();
+    if (!id) return "cover";
+    if (pageConfig[id]) return id;
+    const mapped = panelToPage.get(id);
+    return mapped || "cover";
+  }
+
+  function topBlockFor(el) {
+    let node = el;
+    while (node && node.parentElement !== host) node = node.parentElement;
+    return node;
+  }
+
+  function updateToc(pageId) {
+    for (const a of tocLinks) {
+      const href = a.getAttribute("href") || "";
+      a.classList.toggle("is-active", href === `#${pageId}`);
+    }
+  }
+
+  function apply(pageId, flip) {
+    const cfg = pageConfig[pageId] || pageConfig.cover;
+    const allowed = new Set(cfg.panels);
+    const activeBlocks = new Set();
+
+    for (const panelId of allowed) {
+      const panel = document.getElementById(panelId);
+      if (!panel) continue;
+      const block = topBlockFor(panel);
+      if (block) activeBlocks.add(block);
+    }
+
+    for (const b of blocks) {
+      if (activeBlocks.has(b)) b.classList.add("bookPage--active");
+      else b.classList.remove("bookPage--active");
+      if (b.classList.contains("panelGrid")) b.classList.remove("panelGrid--single");
+      for (const p of Array.from(b.querySelectorAll(".panel[id]"))) p.classList.remove("hidden");
+    }
+
+    for (const b of activeBlocks) {
+      const blockPanels = Array.from(b.querySelectorAll(".panel[id]"));
+      for (const p of blockPanels) {
+        if (knownPanels.has(p.id) && !allowed.has(p.id)) p.classList.add("hidden");
+      }
+      if (b.classList.contains("panelGrid")) {
+        const visible = blockPanels.filter((p) => !p.classList.contains("hidden"));
+        if (visible.length <= 1) b.classList.add("panelGrid--single");
+      }
+    }
+
+    updateToc(pageId);
+
+    if (flip && activePage && activePage !== pageId) {
+      main.classList.add("is-flipping");
+      if (flipTimer) window.clearTimeout(flipTimer);
+      flipTimer = window.setTimeout(() => main.classList.remove("is-flipping"), 480);
+    }
+
+    activePage = pageId;
+    main.scrollTop = 0;
+  }
+
+  for (const a of tocLinks) {
+    a.addEventListener("click", (e) => {
+      const href = a.getAttribute("href") || "";
+      if (!href.startsWith("#")) return;
+      e.preventDefault();
+      window.location.hash = href;
+    });
+  }
+
+  window.addEventListener("hashchange", () => {
+    apply(normalize(window.location.hash), true);
+  });
+
+  const initial = normalize(window.location.hash);
+  apply(initial, false);
+  if (!window.location.hash) window.location.hash = `#${initial}`;
+}
+
 function wireAuthForms() {
   const loginForm = qs("#loginForm");
   const signupForm = qs("#signupForm");
@@ -560,25 +912,23 @@ function wireSimulationEngine() {
         Terminal.write("no anomalies detected");
       }
 
+      renderLiveAnalysis(data, "Simulation Console");
+
+      const recs = recommendationsForKind(data.kind);
       const lines = [];
-      lines.push(data.detected ? "WARNING: suspicious pattern detected" : "OK: no suspicious pattern detected");
-      lines.push(`Context: ${data.context}`);
-      lines.push(`Mode: ${data.mode}`);
-      lines.push(`Impact Level: ${data.impact}`);
-      lines.push("");
-      lines.push(data.output.headline);
-      lines.push("");
-      lines.push(data.output.details);
-      if (data.output.unsafeExample) {
+      lines.push(data.detected ? `FLAGGED: ${data.kind}` : "OK");
+      lines.push(`Context: ${data.context}  |  Mode: ${data.mode}  |  Impact: ${data.impact}`);
+      if (data.output?.headline) {
         lines.push("");
-        lines.push("Example:");
-        lines.push(String(data.output.unsafeExample));
+        lines.push(data.output.headline);
       }
-      if (data.output.fix) {
+      if (data.output?.details) {
         lines.push("");
-        lines.push("Mitigation:");
-        lines.push(String(data.output.fix));
+        lines.push(data.output.details);
       }
+      lines.push("");
+      lines.push("Recommendations:");
+      for (const r of recs) lines.push(`- ${r}`);
 
       setText(out, lines.join("\n"));
       Terminal.status("idle");
@@ -605,6 +955,7 @@ function wireSearch() {
     try {
       const data = await api(`/api/search?term=${encodeURIComponent(term)}`);
       const sim = await simulate("search", term);
+      if (sim) renderLiveAnalysis(sim, "Search");
       if (sim?.detected) {
         if (sim.kind === "SQLi") Threat.bump("sqli_detected");
         Sound.beep({ freq: 520, dur: 0.07, gain: 0.02 });
@@ -639,6 +990,7 @@ function wireLookup() {
     try {
       const data = await api(`/api/users/lookup?username=${encodeURIComponent(username)}`);
       const sim = await simulate("lookup", username);
+      if (sim) renderLiveAnalysis(sim, "Lookup");
       if (sim?.detected) {
         if (sim.kind === "SQLi") Threat.bump("sqli_detected");
         Sound.beep({ freq: 520, dur: 0.07, gain: 0.02 });
@@ -711,6 +1063,7 @@ function wireComments() {
     try {
       await api("/api/comments", { method: "POST", body: JSON.stringify({ content }) });
       const sim = await simulate("comment", content);
+      if (sim) renderLiveAnalysis(sim, "Comment");
       if (sim?.detected && sim.kind === "XSS") {
         Threat.bump("xss_detected");
         Sound.beep({ freq: 560, dur: 0.07, gain: 0.02 });
@@ -750,8 +1103,24 @@ async function loadProfileAndIdorNotice() {
     Sound.beep({ freq: 610, dur: 0.06, gain: 0.02 });
     Terminal.write("idor: access flagged");
     setText(out, `Access blocked.\nrequested: ${data.idor.requestedId}\nallowed: ${data.idor.allowedId}`);
+    setLiveAnalyzer([
+      "Live Analysis",
+      "- source: Profile",
+      "- context: idor",
+      `- mode: ${getModeLabel()}`,
+      "- detected: yes",
+      "- type: IDOR",
+      "- impact: MEDIUM",
+      "",
+      "Server-side authorization blocked an attempt to access another user's profile.",
+      "",
+      "Recommendations:",
+      "- Enforce ownership/role checks on every object access",
+      "- Avoid exposing sequential identifiers when possible",
+      "- Log and alert on repeated access denials",
+    ]);
   } else {
-    setText(out, "OK.");
+    setText(out, "OK. Use the links above to request other ids.");
   }
 
   setText(idEl, data.profile.id);
@@ -774,6 +1143,7 @@ function wireBio() {
     try {
       await api("/api/profile/bio", { method: "POST", body: JSON.stringify({ bio }) });
       const sim = await simulate("bio", bio);
+      if (sim) renderLiveAnalysis(sim, "Bio");
       if (sim?.detected && sim.kind === "XSS") {
         Threat.bump("xss_detected");
         Sound.beep({ freq: 560, dur: 0.07, gain: 0.02 });
@@ -1134,7 +1504,11 @@ async function initLearningIntro() {
   setText(
     out,
     [
-      "Reference loaded.",
+      "Reference:",
+      "- SQLi: query construction patterns and parameterization",
+      "- XSS: output encoding, DOM sinks, CSP",
+      "- Sessions: cookies, expiry, and rotation",
+      "- Access control: object ownership checks",
     ].join("\n")
   );
 }
@@ -1145,7 +1519,12 @@ async function initDefenseIntro() {
   setText(
     out,
     [
-      "Defense panel loaded.",
+      "Defense baseline:",
+      "- Validate at boundaries",
+      "- Parameterize DB queries",
+      "- Encode output by default",
+      "- Enforce authorization server-side",
+      "- Monitor and alert on anomalies",
     ].join("\n")
   );
 }
@@ -1156,30 +1535,35 @@ function setLiveAnalyzer(lines) {
   setText(out, Array.isArray(lines) ? lines.join("\n") : String(lines || ""));
 }
 
-async function runLiveAnalysis({ context, input }) {
-  if (!qs("#liveAnalyzerBox")) return;
-  try {
-    const data = await api("/api/simulate", { method: "POST", body: JSON.stringify({ context, input }) });
-    const lines = [];
-    lines.push("Input Analysis");
-    lines.push(`- context: ${data.context}`);
-    lines.push(`- mode: ${data.mode}`);
-    lines.push(`- detected: ${data.detected ? "yes" : "no"}`);
-    lines.push(`- issue type: ${data.kind}`);
-    lines.push(`- impact: ${data.impact}`);
+function recommendationsForKind(kind) {
+  if (kind === "SQLi") return ["Parameterize queries", "Validate/normalize inputs", "Use least-privilege DB roles", "Log and alert on anomalies"];
+  if (kind === "XSS") return ["Render untrusted input as text", "Avoid dangerous sinks", "Use a strict CSP", "Sanitize only when required"];
+  return ["Keep input as data", "Validate on boundaries", "Log security-relevant events"];
+}
+
+function renderLiveAnalysis(sim, source) {
+  if (!sim) return;
+  const kind = sim.kind || "none";
+  const recommendations = recommendationsForKind(kind);
+
+  const lines = [];
+  lines.push("Live Analysis");
+  if (source) lines.push(`- source: ${source}`);
+  lines.push(`- context: ${sim.context}`);
+  lines.push(`- mode: ${sim.mode}`);
+  lines.push(`- detected: ${sim.detected ? "yes" : "no"}`);
+  lines.push(`- type: ${kind}`);
+  lines.push(`- impact: ${sim.impact}`);
+  lines.push("");
+  if (sim.output?.headline) lines.push(sim.output.headline);
+  if (sim.output?.details) {
     lines.push("");
-    lines.push(data.output.headline);
-    lines.push("");
-    lines.push(data.output.details);
-    if (data.output.fix) {
-      lines.push("");
-      lines.push("How a secure system handles this:");
-      lines.push(data.output.fix);
-    }
-    setLiveAnalyzer(lines);
-  } catch {
-    // keep quiet
+    lines.push(sim.output.details);
   }
+  lines.push("");
+  lines.push("Recommendations:");
+  for (const r of recommendations) lines.push(`- ${r}`);
+  setLiveAnalyzer(lines);
 }
 
 function showLevelUp(level) {
@@ -1215,9 +1599,6 @@ function wireAnalyzer() {
       lines.push(`- score: ${score}/100`);
       lines.push(`- checked files: ${(data.checkedFiles || []).join(", ")}`);
       lines.push(`- issues: ${(data.issues || []).length}`);
-      lines.push("");
-      lines.push("Notes:");
-      lines.push("- This is a static/self-check report; it does not attempt exploitation.");
       setText(summary, lines.join("\n"));
 
       for (const c of data.checks || []) {
@@ -1262,7 +1643,11 @@ async function initGuideIntro() {
   setText(
     out,
     [
-      "Guide loaded.",
+      "Testing guide:",
+      "- Intercept a request",
+      "- Modify one input at a time",
+      "- Compare status codes and response shapes",
+      "- Verify server-side authorization decisions",
     ].join("\n")
   );
 }
@@ -1557,12 +1942,16 @@ async function boot() {
   Threat.startDecay();
   initMatrixBackground();
   wireSoundToggle();
+  wireTerminalClear();
+  wireVideoAssets();
+  BookIntro.bind();
 
   const p = page();
   if (p === "home") {
     Terminal.write("welcome console online");
     initHome();
     await showBootOverlay(["initializing system...", "calibrating sensors...", "ready"]);
+    BookIntro.openIfNeeded();
     await loadMode();
     wireModeToggle();
     return;
@@ -1583,6 +1972,10 @@ async function boot() {
   if (p === "dashboard") {
     wireLogout();
     await showBootOverlay(["loading dashboard...", "syncing event stream...", "modules online"]);
+    BookIntro.openIfNeeded();
+    initDashboardEmptyStates();
+    wireDashboardQuickActions();
+    wireBookPages();
     await loadMe();
     await loadSessionInfo();
     wireSimulationEngine();

@@ -7,9 +7,39 @@
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
+    <div class="skullBg" aria-hidden="true"></div>
+    <div class="videoBg" aria-hidden="true">
+      <video id="bgVideo" class="videoBg__video" muted autoplay loop playsinline preload="auto" poster="/hooded-skull.svg"></video>
+    </div>
     <canvas id="matrixBg" class="matrix" aria-hidden="true"></canvas>
     <div class="bg__grid" aria-hidden="true"></div>
     <div class="bg__scanlines" aria-hidden="true"></div>
+
+    <div class="bookIntro" id="bookIntro" aria-hidden="true">
+      <div class="bookIntro__card">
+        <div class="bookIntro__inner">
+          <p class="bookIntro__title">The Hacker Book</p>
+          <p class="bookIntro__sub">A chaptered dashboard with page flips and a focused reading view.</p>
+          <div class="bookIntro__art">
+            <video
+              id="introVideo"
+              class="bookIntro__video"
+              muted
+              autoplay
+              loop
+              playsinline
+              preload="auto"
+              poster="/skeleton-reading.svg"
+            ></video>
+            <img id="introImage" src="/skeleton-reading.svg" alt="" />
+          </div>
+          <div class="bookIntro__ctaRow">
+            <button class="btn btn--primary" id="openBookBtn" type="button">Enter Chapters</button>
+            <span class="bookIntro__hint">Tip: Flip chapters from the left page.</span>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <div class="boot" id="boot" aria-hidden="true">
       <div class="boot__box">
@@ -48,14 +78,21 @@
     </header>
 
     <main class="shell">
-      <div class="layout">
+      <div class="layout layout--book">
         <aside class="sidebar">
           <section class="panel">
             <div class="panel__header">
-              <div class="panel__title">Mission Panels</div>
+              <div class="panel__title">Table of Contents</div>
               <p class="panel__subtitle">User: <span id="meUser">loading...</span></p>
             </div>
             <div class="missionGrid">
+              <a class="missionCard" href="#cover">
+                <div class="missionCard__head">
+                  <div class="missionCard__title">Cover</div>
+                  <span class="badge">START</span>
+                </div>
+                <div class="missionCard__meta">Simulation console, live analyzer, and overview.</div>
+              </a>
               <a class="missionCard" href="#lab-sqli">
                 <div class="missionCard__head">
                   <div class="missionCard__title">SQL Injection Lab</div>
@@ -75,7 +112,7 @@
                   <div class="missionCard__title">Authentication Lab</div>
                   <span class="badge">INFO</span>
                 </div>
-                <div class="missionCard__meta">Sessions, hashing, and safe error handling.</div>
+                <div class="missionCard__meta">Sessions, hashing, and robust error handling.</div>
               </a>
               <a class="missionCard" href="#lab-idor">
                 <div class="missionCard__head">
@@ -124,7 +161,7 @@
                   <div class="missionCard__title">Challenge Mode</div>
                   <span class="badge badge--amber">QUIZ</span>
                 </div>
-                <div class="missionCard__meta">Interactive, safe mini-missions (no exploit steps).</div>
+                <div class="missionCard__meta">Interactive mini-missions with XP tracking.</div>
               </a>
             </div>
           </section>
@@ -132,35 +169,52 @@
           <section class="terminalPanel">
             <div class="terminalPanel__head">
               <div class="terminalPanel__title">Terminal</div>
-              <div class="terminalPanel__status" id="terminalStatus">idle</div>
+              <div class="row">
+                <button class="btnIcon btnIcon--sm" id="terminalClearBtn" type="button" title="Clear terminal">Clear</button>
+                <div class="terminalPanel__status" id="terminalStatus">idle</div>
+              </div>
             </div>
             <pre class="terminalPanel__body" id="terminalLog"></pre>
           </section>
         </aside>
 
         <section class="main">
-          <section class="panel">
-            <div class="panel__header">
-              <div class="panel__title">Demo Attack Simulation Engine</div>
-              <p class="panel__subtitle">
-                Enter suspicious input. Demo Mode will explain what would happen in a vulnerable system. Secure Mode shows the fix.
-              </p>
-            </div>
-            <div class="panel__body stack">
-              <form id="simulateForm" class="row">
-                <select name="context" aria-label="Simulation context">
-                  <option value="login">Auth (login)</option>
-                  <option value="search">SQL search</option>
-                  <option value="comment">XSS comment</option>
-                  <option value="bio">Stored bio</option>
-                  <option value="idor">IDOR profile</option>
-                </select>
-                <input class="input" name="input" type="text" placeholder="Enter suspicious input to simulate..." />
-                <button class="btn btn--primary" type="submit">Simulate</button>
-              </form>
-              <div class="result result--terminal" id="simulateResult"></div>
-              <div class="hint">Processing preview output.</div>
-            </div>
+          <div class="bookPages" id="bookPages">
+          <section class="panelGrid panelGrid--2">
+            <section class="panel" id="simulate">
+              <div class="panel__header">
+                <div class="panel__title">Simulation Console</div>
+                <p class="panel__subtitle">Analyze input patterns and view classification and impact.</p>
+              </div>
+              <div class="panel__body stack">
+                <form id="simulateForm" class="row">
+                  <select name="context" aria-label="Simulation context">
+                    <option value="login">Login</option>
+                    <option value="search">Search</option>
+                    <option value="comment">Comment</option>
+                    <option value="bio">Profile bio</option>
+                  </select>
+                  <input class="input" id="simulateInput" name="input" type="text" placeholder="Enter input..." />
+                  <button class="btn btn--primary" type="submit">Analyze</button>
+                </form>
+                <div class="row">
+                  <button class="btn btn--ghost" id="simSampleSql" type="button">Sample SQLi</button>
+                  <button class="btn btn--ghost" id="simSampleXss" type="button">Sample XSS</button>
+                  <button class="btn btn--ghost" id="simClearBtn" type="button">Clear</button>
+                </div>
+                <div class="result result--terminal" id="simulateResult"></div>
+              </div>
+            </section>
+
+            <section class="panel" id="liveAnalyzer">
+              <div class="panel__header">
+                <div class="panel__title">Live Analyzer</div>
+                <p class="panel__subtitle">Auto-updates from your actions across the dashboard.</p>
+              </div>
+              <div class="panel__body stack">
+                <div class="result result--terminal" id="liveAnalyzerBox"></div>
+              </div>
+            </section>
           </section>
 
           <section class="panel" id="overview">
@@ -202,58 +256,62 @@
             </div>
           </section>
 
-          <section class="panel" id="liveAnalyzer">
-            <div class="panel__header">
-              <div class="panel__title">Live Request Analyzer</div>
-              <p class="panel__subtitle">Quick assessment of submitted input.</p>
-            </div>
-            <div class="panel__body stack">
-              <div class="result result--terminal" id="liveAnalyzerBox"></div>
-            </div>
-          </section>
-
+          <section class="panelGrid panelGrid--2">
           <section class="panel" id="lab-sqli">
             <div class="panel__header">
-              <div class="panel__title">SQL Injection Lab (Safe)</div>
-              <p class="panel__subtitle">
-                Search and lookup use prepared statements. Demo Mode flags injection patterns and shows unsafe query examples.
-              </p>
+              <div class="panel__title">SQL Injection Lab</div>
+              <p class="panel__subtitle">Search and lookup use parameterized queries. Toggle modes and compare behavior.</p>
             </div>
             <div class="panel__body stack">
               <div class="row">
                 <form id="searchForm" class="row rowFlex">
-                  <input class="input" name="term" type="text" placeholder="Search users by username..." />
+                  <input class="input" id="searchTerm" name="term" type="text" placeholder="Search users by username..." />
                   <button class="btn btn--ghost" type="submit">Search</button>
                 </form>
               </div>
+              <div class="row">
+                <button class="btn btn--ghost" id="searchSampleNormal" type="button">Try "admin"</button>
+                <button class="btn btn--ghost" id="searchSampleFlag" type="button">Flag</button>
+                <button class="btn btn--ghost" id="searchClearBtn" type="button">Clear</button>
+              </div>
               <div id="searchResult" class="result result--terminal"></div>
 
-              <div class="hint">User lookup endpoint (safe): shows detection messaging in Demo Mode.</div>
+              <div class="hint">Lookup returns a user or null.</div>
               <form id="lookupForm" class="row">
-                <input class="input" name="username" type="text" placeholder="Lookup username (exact)..." />
+                <input class="input" id="lookupUsername" name="username" type="text" placeholder="Lookup username (exact)..." />
                 <button class="btn btn--ghost" type="submit">Lookup</button>
               </form>
+              <div class="row">
+                <button class="btn btn--ghost" id="lookupSampleNormal" type="button">Try "user"</button>
+                <button class="btn btn--ghost" id="lookupSampleFlag" type="button">Flag</button>
+                <button class="btn btn--ghost" id="lookupClearBtn" type="button">Clear</button>
+              </div>
               <div id="lookupResult" class="result result--terminal"></div>
             </div>
           </section>
 
           <section class="panel" id="lab-xss">
             <div class="panel__header">
-              <div class="panel__title">XSS Lab (Safe)</div>
-              <p class="panel__subtitle">
-                Comments are stored as plain text and rendered using textContent. Demo Mode flags payloads; Secure Mode blocks them.
-              </p>
+              <div class="panel__title">XSS Lab</div>
+              <p class="panel__subtitle">Comments are stored as plain text and rendered using text-only DOM APIs.</p>
             </div>
             <div class="panel__body stack">
               <form id="commentForm" class="row">
-                <input class="input" name="content" type="text" placeholder="Leave a comment..." maxlength="500" />
+                <input class="input" id="commentContent" name="content" type="text" placeholder="Leave a comment..." maxlength="500" />
                 <button class="btn btn--primary" type="submit">Post</button>
               </form>
+              <div class="row">
+                <button class="btn btn--ghost" id="commentSampleNormal" type="button">Try "hello"</button>
+                <button class="btn btn--ghost" id="commentSampleFlag" type="button">Flag</button>
+                <button class="btn btn--ghost" id="commentClearBtn" type="button">Clear</button>
+              </div>
               <div id="commentResult" class="result result--terminal"></div>
               <div id="commentsList" class="stack"></div>
             </div>
           </section>
+          </section>
 
+          <section class="panelGrid panelGrid--2">
           <section class="panel" id="lab-auth">
             <div class="panel__header">
               <div class="panel__title">Authentication Lab</div>
@@ -267,10 +325,15 @@
 
           <section class="panel" id="lab-idor">
             <div class="panel__header">
-              <div class="panel__title">IDOR Lab (Safe)</div>
+              <div class="panel__title">IDOR Lab</div>
               <p class="panel__subtitle">Server-side authorization is enforced for profile access.</p>
             </div>
             <div class="panel__body stack">
+              <div class="row">
+                <a class="btn btn--ghost" href="/profile">Open Profile</a>
+                <a class="btn btn--ghost" href="/profile?id=1">Request id=1</a>
+                <a class="btn btn--ghost" href="/profile?id=999">Request id=999</a>
+              </div>
               <div id="idorResult" class="result result--terminal"></div>
               <div class="hint">Profile data:</div>
               <div class="row">
@@ -281,12 +344,18 @@
               <form id="bioForm" class="stack">
                 <label class="hint">
                   Profile bio
-                  <textarea name="bio" rows="3" maxlength="600"></textarea>
+                  <textarea id="bioText" name="bio" rows="3" maxlength="600"></textarea>
                 </label>
+                <div class="row">
+                  <button class="btn btn--ghost" id="bioSampleNormal" type="button">Sample bio</button>
+                  <button class="btn btn--ghost" id="bioSampleFlag" type="button">Flag</button>
+                  <button class="btn btn--ghost" id="bioClearBtn" type="button">Clear</button>
+                </div>
                 <button class="btn btn--ghost" type="submit">Update Bio</button>
               </form>
               <div id="bioResult" class="result result--terminal"></div>
             </div>
+          </section>
           </section>
 
           <section class="panel" id="tools">
@@ -308,7 +377,7 @@
                     <div class="missionCard__title">Nmap</div>
                     <span class="badge">SCAN</span>
                   </div>
-                  <div class="missionCard__meta">Network discovery and exposure assessment (simulated output).</div>
+                  <div class="missionCard__meta">Network discovery and exposure assessment.</div>
                 </button>
                 <button class="missionCard" type="button" data-tool="burp">
                   <div class="missionCard__head">
@@ -329,28 +398,28 @@
                     <div class="missionCard__title">Metasploit Framework</div>
                     <span class="badge badge--amber">FRAME</span>
                   </div>
-                  <div class="missionCard__meta">Framework overview for controlled lab workflows (no exploit steps).</div>
+                  <div class="missionCard__meta">Framework overview and modules.</div>
                 </button>
                 <button class="missionCard" type="button" data-tool="john">
                   <div class="missionCard__head">
                     <div class="missionCard__title">John the Ripper</div>
                     <span class="badge badge--amber">AUDIT</span>
                   </div>
-                  <div class="missionCard__meta">Password auditing concepts (no brute-force simulation).</div>
+                  <div class="missionCard__meta">Password auditing concepts.</div>
                 </button>
                 <button class="missionCard" type="button" data-tool="hashcat">
                   <div class="missionCard__head">
                     <div class="missionCard__title">Hashcat</div>
                     <span class="badge badge--amber">AUDIT</span>
                   </div>
-                  <div class="missionCard__meta">Hash auditing concepts and defenses (simulated).</div>
+                  <div class="missionCard__meta">Hash auditing concepts and defenses.</div>
                 </button>
                 <button class="missionCard" type="button" data-tool="nikto">
                   <div class="missionCard__head">
                     <div class="missionCard__title">Nikto</div>
                     <span class="badge">WEB</span>
                   </div>
-                  <div class="missionCard__meta">Web server misconfiguration auditing (simulated output).</div>
+                  <div class="missionCard__meta">Web server misconfiguration auditing.</div>
                 </button>
                 <button class="missionCard" type="button" data-tool="zap">
                   <div class="missionCard__head">
@@ -381,7 +450,7 @@
           <section class="panel" id="guide">
             <div class="panel__header">
               <div class="panel__title">Testing Guide (Burp Workflow)</div>
-              <p class="panel__subtitle">High-level, defensive testing steps. Do not test systems without permission.</p>
+              <p class="panel__subtitle">A compact workflow checklist for inspecting requests and responses.</p>
             </div>
             <div class="panel__body stack">
               <div class="result result--terminal" id="guideIntro"></div>
@@ -402,9 +471,9 @@
                     <div class="missionCard__title">/api/search</div>
                     <span class="badge">SQL</span>
                   </div>
-                  <div class="missionCard__meta">
-                    1) Intercept search request  2) Replay with unusual text  3) Compare responses between Demo and Secure mode. Observe
-                    whether the server returns safe, consistent results.
+                <div class="missionCard__meta">
+                  1) Intercept search request  2) Replay with unusual text  3) Compare responses between Demo and Secure mode. Observe
+                    whether the server returns consistent results.
                   </div>
                 </div>
                 <div class="missionCard">
@@ -422,9 +491,8 @@
                     <div class="missionCard__title">/api/comments</div>
                     <span class="badge">XSS</span>
                   </div>
-                  <div class="missionCard__meta">
-                    1) Submit a comment  2) Replay with special characters  3) Observe safe encoding and CSP behavior. Note: VulnLab does not
-                    execute scripts.
+                <div class="missionCard__meta">
+                    1) Submit a comment  2) Replay with special characters  3) Observe encoding and CSP behavior.
                   </div>
                 </div>
                 <div class="missionCard">
@@ -439,8 +507,8 @@
               </div>
 
               <div class="hint">
-                What to observe: status codes, response length changes, safe error messages, authorization behavior, and differences between Demo
-                and Secure mode.
+                What to observe: status codes, response length changes, error messages, authorization behavior, and differences between Demo and
+                Secure mode.
               </div>
             </div>
           </section>
@@ -448,7 +516,7 @@
           <section class="panel" id="security">
             <div class="panel__header">
               <div class="panel__title">Security Analyzer</div>
-              <p class="panel__subtitle">Automated secure coding feedback for the current backend (safe, local analysis).</p>
+              <p class="panel__subtitle">Automated static checks over the current project files.</p>
             </div>
             <div class="panel__body stack">
               <div class="row">
@@ -457,14 +525,14 @@
               </div>
               <div class="result result--terminal" id="analyzerSummary"></div>
               <div class="missionGrid missionGrid--2" id="analyzerFindings"></div>
-              <div class="hint">This is a static/self-check style report. It does not attempt any real exploitation.</div>
+              <div class="hint">Tip: run after changes to track improvements over time.</div>
             </div>
           </section>
 
           <section class="panel" id="learning">
             <div class="panel__header">
-              <div class="panel__title">Learning Center</div>
-              <p class="panel__subtitle">What it is, why it works, impact, and how to fix it (secure coding).</p>
+              <div class="panel__title">Reference</div>
+              <p class="panel__subtitle">Compact notes, patterns, and snippets.</p>
             </div>
             <div class="panel__body stack">
               <div class="result result--terminal" id="learningIntro"></div>
@@ -476,7 +544,7 @@
                 </div>
                 <div class="panel__body stack">
                   <div class="hint">Why it works: concatenation lets input change the structure of the query.</div>
-                  <pre class="result result--terminal">UNSAFE (example only):
+                  <pre class="result result--terminal">UNSAFE:
 const q = "SELECT * FROM users WHERE u='" + user + "' AND p='" + pass + "'";
 
 SAFE:
@@ -493,7 +561,6 @@ db.get("SELECT * FROM users WHERE u=? AND p=?", [user, pass]);</pre>
                 <div class="panel__body stack">
                   <div class="hint">Impact: session theft, UI redress, malicious actions as the user.</div>
                   <pre class="result result--terminal">SAFE RENDERING:
-// Use textContent (or server-side encoding) for untrusted input.
 el.textContent = userInput;
 
 DEFENSE-IN-DEPTH:
@@ -551,8 +618,8 @@ Content-Security-Policy (CSP) + output encoding + avoid dangerous sinks.</pre>
                     <div class="missionCard__title">Secure Authentication</div>
                     <span class="badge">AUTH</span>
                   </div>
-                  <div class="missionCard__meta">
-                    Hash passwords (bcrypt/argon2), rate-limit, add MFA, and monitor for credential stuffing. Use safe error messages.
+                <div class="missionCard__meta">
+                    Hash passwords (bcrypt/argon2), rate-limit, add MFA, and monitor for credential stuffing. Use consistent error messages.
                   </div>
                 </div>
                 <div class="missionCard">
@@ -598,7 +665,7 @@ Content-Security-Policy (CSP) + output encoding + avoid dangerous sinks.</pre>
           <section class="panel" id="challenges">
             <div class="panel__header">
               <div class="panel__title">Challenges</div>
-              <p class="panel__subtitle">Guided missions with hints, expected outcomes, XP, and safe simulations.</p>
+              <p class="panel__subtitle">Guided missions with hints, expected outcomes, and XP.</p>
             </div>
             <div class="panel__body stack">
               <div class="row">
@@ -630,6 +697,7 @@ Content-Security-Policy (CSP) + output encoding + avoid dangerous sinks.</pre>
               </div>
             </div>
           </section>
+          </div>
         </section>
       </div>
     </main>
