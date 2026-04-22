@@ -1934,6 +1934,826 @@ function wireChallenges() {
   select(activeId);
 }
 
+// ---- Cinematic FX (cursor, fog, particles, glitch, classified card meta)
+function initCinematicFx() {
+  const reduceMotion =
+    !!window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // Page-load fade from black with a subtle red pulse.
+  try {
+    const fade = document.createElement("div");
+    fade.className = "pageFade";
+    fade.setAttribute("aria-hidden", "true");
+    document.body.appendChild(fade);
+    window.setTimeout(() => fade.remove(), 1100);
+  } catch {
+    // no-op
+  }
+
+  // Ambient fog (parallax layered).
+  const fogs = qsa(".fxFog");
+  const hasFar = !!qs(".fxFog--far");
+  const hasNear = !!qs(".fxFog--near");
+  if (!hasFar || !hasNear) {
+    // Reuse a plain `.fxFog` if it exists; otherwise create the layers.
+    const base = fogs[0] || document.createElement("div");
+    base.className = "fxFog fxFog--far";
+    base.setAttribute("aria-hidden", "true");
+    if (!fogs.length) document.body.appendChild(base);
+
+    const near = document.createElement("div");
+    near.className = "fxFog fxFog--near";
+    near.setAttribute("aria-hidden", "true");
+    document.body.appendChild(near);
+
+    // Remove any extra legacy fog layers to keep the look controlled.
+    for (const extra of fogs.slice(1)) extra.remove();
+  }
+
+  if (!qs(".fxGrain")) {
+    const grain = document.createElement("div");
+    grain.className = "fxGrain";
+    grain.setAttribute("aria-hidden", "true");
+    document.body.appendChild(grain);
+  }
+
+  if (!qs(".fxGlitch")) {
+    const glitch = document.createElement("div");
+    glitch.className = "fxGlitch";
+    glitch.setAttribute("aria-hidden", "true");
+    document.body.appendChild(glitch);
+  }
+
+  function pulseGlitch() {
+    document.body.classList.add("is-glitching");
+    window.setTimeout(() => document.body.classList.remove("is-glitching"), 260);
+  }
+
+  // Expose a tiny hook for other modules (market, etc.)
+  window.__vlFx = { glitch: pulseGlitch };
+
+  function rand(min, max) {
+    return min + Math.random() * (max - min);
+  }
+
+  // Lightweight parallax variables for 3D depth feel (cursor + scroll).
+  if (!reduceMotion) {
+    const root = document.documentElement;
+    const coarse = !!window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+
+    function clamp(v, lo, hi) {
+      return Math.max(lo, Math.min(hi, v));
+    }
+
+    let tx = 0;
+    let ty = 0;
+    let px = 0;
+    let py = 0;
+    let scrollN = 0;
+
+    function onPointer(ev) {
+      if (coarse) return;
+      const nx = (ev.clientX / Math.max(1, window.innerWidth) - 0.5) * 2;
+      const ny = (ev.clientY / Math.max(1, window.innerHeight) - 0.5) * 2;
+      tx = clamp(nx, -1, 1);
+      ty = clamp(ny, -1, 1);
+    }
+
+    function onScroll() {
+      const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+      const p = window.scrollY / max; // 0..1
+      scrollN = clamp((p - 0.5) * 2, -1, 1);
+    }
+
+    window.addEventListener("pointermove", onPointer, { passive: true });
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+
+    let raf = 0;
+    function tick() {
+      // Smooth to keep motion cinematic and stable.
+      px += (tx - px) * 0.08;
+      py += (ty + scrollN * 0.35 - py) * 0.08;
+      root.style.setProperty("--px", px.toFixed(3));
+      root.style.setProperty("--py", py.toFixed(3));
+      raf = window.requestAnimationFrame(tick);
+    }
+    raf = window.requestAnimationFrame(tick);
+
+    window.addEventListener("blur", () => {
+      window.cancelAnimationFrame(raf);
+      raf = 0;
+    });
+
+    window.addEventListener("focus", () => {
+      if (!raf) raf = window.requestAnimationFrame(tick);
+    });
+  }
+
+  // Classified file meta for item cards (serial, power rating, category).
+  function hash32(str) {
+    let h = 2166136261;
+    for (let i = 0; i < str.length; i++) {
+      h ^= str.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return h >>> 0;
+  }
+
+  function serialFor(title) {
+    const h = hash32(title || "x");
+    const hex = h.toString(16).toUpperCase().padStart(8, "0");
+    return `DA-${hex.slice(0, 4)}-${hex.slice(4)}`;
+  }
+
+  function categoryFor(title) {
+    const t = String(title || "").toLowerCase();
+    if (t.includes("sql")) return "INFILTRATION";
+    if (t.includes("xss")) return "PHANTOM";
+    if (t.includes("auth")) return "COVENANT";
+    if (t.includes("idor")) return "BREACH";
+    if (t.includes("tools")) return "ARMORY";
+    if (t.includes("admin")) return "OVERRIDE";
+    if (t.includes("reference") || t.includes("learning")) return "GRIMOIRE";
+    return "BLACK FILE";
+  }
+
+  function pwrFor(title) {
+    const h = hash32(title || "x");
+    return 1 + (h % 9);
+  }
+
+  function decorateCard(card) {
+    if (!card || card.__vlDecorated) return;
+    if (!card.classList || !card.classList.contains("missionCard")) return;
+    const titleEl = card.querySelector(".missionCard__title");
+    const title = titleEl ? titleEl.textContent.trim() : card.textContent.trim();
+
+    if (!card.querySelector(".fileMeta")) {
+      const meta = document.createElement("div");
+      meta.className = "fileMeta";
+
+      const serial = document.createElement("span");
+      serial.className = "fileMeta__item";
+      const serialVal = card.dataset && card.dataset.serial ? String(card.dataset.serial) : serialFor(title);
+      serial.textContent = `SERIAL: ${serialVal}`;
+
+      const pwr = document.createElement("span");
+      pwr.className = "fileMeta__item fileMeta__item--glow";
+      const pwrRaw = card.dataset && card.dataset.power ? Number(card.dataset.power) : pwrFor(title);
+      const pwrVal = Number.isFinite(pwrRaw) ? Math.max(1, Math.min(9, Math.round(pwrRaw))) : pwrFor(title);
+      pwr.textContent = `PWR: ${String(pwrVal).padStart(2, "0")}/09`;
+
+      const cat = document.createElement("span");
+      cat.className = "fileMeta__item";
+      const classVal = card.dataset && card.dataset.class ? String(card.dataset.class) : categoryFor(title);
+      cat.textContent = `CLASS: ${classVal}`;
+
+      meta.appendChild(serial);
+      meta.appendChild(pwr);
+      meta.appendChild(cat);
+
+      card.appendChild(meta);
+    }
+
+    card.__vlDecorated = true;
+  }
+
+  function decorateAllCards(root = document) {
+    const cards = root.querySelectorAll ? root.querySelectorAll(".missionCard") : [];
+    for (const c of cards) decorateCard(c);
+  }
+
+  decorateAllCards();
+
+  if (!reduceMotion && "MutationObserver" in window) {
+    const obs = new MutationObserver((mutations) => {
+      for (const m of mutations) {
+        for (const n of m.addedNodes || []) {
+          if (!n || !n.querySelectorAll) continue;
+          decorateAllCards(n);
+        }
+      }
+    });
+    obs.observe(document.body, { childList: true, subtree: true });
+  }
+
+  // Custom crosshair cursor with a subtle trail.
+  const isCoarse = !!window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+  if (!reduceMotion && !isCoarse) {
+    const rig = document.createElement("div");
+    rig.className = "cursorRig";
+    rig.setAttribute("aria-hidden", "true");
+    const cursor = document.createElement("div");
+    cursor.className = "cursor";
+    const dot = document.createElement("div");
+    dot.className = "cursorDot";
+    rig.appendChild(cursor);
+    rig.appendChild(dot);
+    document.body.appendChild(rig);
+    document.body.classList.add("hasCustomCursor");
+
+    let x = window.innerWidth / 2;
+    let y = window.innerHeight / 2;
+    let tx = x;
+    let ty = y;
+    let dx = x;
+    let dy = y;
+
+    function onMove(ev) {
+      tx = ev.clientX;
+      ty = ev.clientY;
+    }
+
+    window.addEventListener("pointermove", onMove, { passive: true });
+
+    let raf = 0;
+    function tick() {
+      // Smooth the cursor and trail so it feels "cinematic" rather than snappy.
+      x += (tx - x) * 0.35;
+      y += (ty - y) * 0.35;
+      dx += (tx - dx) * 0.16;
+      dy += (ty - dy) * 0.16;
+      cursor.style.left = `${x}px`;
+      cursor.style.top = `${y}px`;
+      dot.style.left = `${dx}px`;
+      dot.style.top = `${dy}px`;
+      raf = window.requestAnimationFrame(tick);
+    }
+    raf = window.requestAnimationFrame(tick);
+
+    window.addEventListener("blur", () => {
+      window.cancelAnimationFrame(raf);
+      raf = 0;
+    });
+
+    window.addEventListener("focus", () => {
+      if (!raf) raf = window.requestAnimationFrame(tick);
+    });
+  }
+
+  // Ambient particles (dust/ash) - subtle, behind UI.
+  if (!reduceMotion) {
+    const canvas = document.createElement("canvas");
+    canvas.className = "ash";
+    canvas.setAttribute("aria-hidden", "true");
+    document.body.appendChild(canvas);
+
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+      let w = 0;
+      let h = 0;
+
+      function resize() {
+        w = Math.max(1, window.innerWidth);
+        h = Math.max(1, window.innerHeight);
+        canvas.width = Math.floor(w * dpr);
+        canvas.height = Math.floor(h * dpr);
+        canvas.style.width = `${w}px`;
+        canvas.style.height = `${h}px`;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      window.addEventListener("resize", resize, { passive: true });
+      resize();
+
+      const count = 70;
+      const parts = Array.from({ length: count }, () => ({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        r: 0.6 + Math.random() * 1.8,
+        a: 0.03 + Math.random() * 0.08,
+        vx: -0.05 + Math.random() * 0.1,
+        vy: 0.12 + Math.random() * 0.22,
+        hue: Math.random() < 0.12 ? "red" : "white",
+      }));
+
+      function step() {
+        ctx.clearRect(0, 0, w, h);
+        for (const p of parts) {
+          p.x += p.vx;
+          p.y += p.vy;
+          if (p.y - p.r > h) {
+            p.y = -p.r;
+            p.x = Math.random() * w;
+          }
+          if (p.x < -20) p.x = w + 20;
+          if (p.x > w + 20) p.x = -20;
+
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          if (p.hue === "red") ctx.fillStyle = `rgba(255, 26, 26, ${p.a})`;
+          else ctx.fillStyle = `rgba(230, 230, 230, ${p.a})`;
+          ctx.fill();
+        }
+        window.requestAnimationFrame(step);
+      }
+
+      window.requestAnimationFrame(step);
+    }
+  }
+
+  // Ambient horror effect engine (subtle, randomized, auto-cleaning).
+  if (!reduceMotion) {
+    const MAX_BLOOD = 3;
+    const MAX_CRACK = 1;
+    let activeBlood = 0;
+    let activeCrack = 0;
+    let running = false;
+    let timers = [];
+
+    function later(fn, ms) {
+      const id = window.setTimeout(fn, ms);
+      timers.push(id);
+      return id;
+    }
+
+    function clearTimers() {
+      for (const id of timers) window.clearTimeout(id);
+      timers = [];
+    }
+
+    function spawnBlood() {
+      if (activeBlood >= MAX_BLOOD) return;
+      const el = document.createElement("div");
+      el.className = "fxBlood";
+      el.setAttribute("aria-hidden", "true");
+
+      const size = Math.round(rand(160, 360));
+      const w = Math.max(1, window.innerWidth);
+      const h = Math.max(1, window.innerHeight);
+      const edge = Math.floor(rand(0, 4)); // 0 top, 1 right, 2 bottom, 3 left
+      let x = 0;
+      let y = 0;
+      if (edge === 0) {
+        x = rand(-size * 0.15, w - size * 0.85);
+        y = rand(-size * 0.28, size * 0.08);
+      } else if (edge === 2) {
+        x = rand(-size * 0.15, w - size * 0.85);
+        y = rand(h - size * 0.78, h - size * 0.48);
+      } else if (edge === 1) {
+        x = rand(w - size * 0.78, w - size * 0.48);
+        y = rand(-size * 0.18, h - size * 0.88);
+      } else {
+        x = rand(-size * 0.28, size * 0.08);
+        y = rand(-size * 0.18, h - size * 0.88);
+      }
+      const rot = Math.round(rand(-18, 18));
+      const op = rand(0.08, 0.18).toFixed(3);
+      const dur = Math.round(rand(5200, 8800));
+
+      el.style.width = `${size}px`;
+      el.style.height = `${size}px`;
+      el.style.left = `${Math.round(x)}px`;
+      el.style.top = `${Math.round(y)}px`;
+      el.style.setProperty("--rot", `${rot}deg`);
+      el.style.setProperty("--op", op);
+      el.style.setProperty("--dur", `${dur}ms`);
+
+      activeBlood += 1;
+      document.body.appendChild(el);
+
+      el.addEventListener(
+        "animationend",
+        () => {
+          activeBlood = Math.max(0, activeBlood - 1);
+          el.remove();
+        },
+        { once: true }
+      );
+    }
+
+    function spawnCrack() {
+      if (activeCrack >= MAX_CRACK) return;
+      const el = document.createElement("div");
+      el.className = "fxCrack";
+      el.setAttribute("aria-hidden", "true");
+
+      el.style.setProperty("--cx", `${Math.round(rand(15, 85))}%`);
+      el.style.setProperty("--cy", `${Math.round(rand(15, 75))}%`);
+      el.style.setProperty("--rot", `${Math.round(rand(-50, 50))}deg`);
+
+      activeCrack += 1;
+      document.body.appendChild(el);
+      pulseGlitch();
+
+      el.addEventListener(
+        "animationend",
+        () => {
+          activeCrack = Math.max(0, activeCrack - 1);
+          el.remove();
+        },
+        { once: true }
+      );
+    }
+
+    function pulseLight() {
+      document.body.classList.add("is-pulsing");
+      later(() => document.body.classList.remove("is-pulsing"), Math.round(rand(1200, 2000)));
+    }
+
+    function flickerLight() {
+      if (document.body.classList.contains("is-flickering")) return;
+      document.body.classList.add("is-flickering");
+      later(() => document.body.classList.remove("is-flickering"), Math.round(rand(160, 260)));
+    }
+
+    function scheduleBlood() {
+      later(() => {
+        spawnBlood();
+        scheduleBlood();
+      }, Math.round(rand(1400, 4200)));
+    }
+
+    function scheduleGlitch() {
+      later(() => {
+        // Micro-glitches: 100-300ms via the CSS overlay.
+        pulseGlitch();
+        scheduleGlitch();
+      }, Math.round(rand(1600, 5600)));
+    }
+
+    function schedulePulse() {
+      later(() => {
+        pulseLight();
+        schedulePulse();
+      }, Math.round(rand(5200, 11000)));
+    }
+
+    function scheduleFlicker() {
+      later(() => {
+        flickerLight();
+        scheduleFlicker();
+      }, Math.round(rand(4500, 14000)));
+    }
+
+    function scheduleCrack() {
+      later(() => {
+        spawnCrack();
+        scheduleCrack();
+      }, Math.round(rand(22000, 52000)));
+    }
+
+    function start() {
+      if (running) return;
+      running = true;
+      clearTimers();
+      scheduleBlood();
+      scheduleGlitch();
+      schedulePulse();
+      scheduleFlicker();
+      scheduleCrack();
+    }
+
+    function stop() {
+      running = false;
+      clearTimers();
+    }
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) stop();
+      else start();
+    });
+
+    start();
+  }
+}
+
+// ---- Market (premium weapon-marketplace styling; demo-only UI)
+function initMarket() {
+  const grid = qs("#marketGrid");
+  if (!grid) return;
+
+  const searchEl = qs("#marketSearch");
+  const catEl = qs("#marketCategory");
+  const refreshBtn = qs("#marketRefreshBtn");
+  const clearBtn = qs("#marketClearBtn");
+  const checkoutBtn = qs("#marketCheckoutBtn");
+  const balanceEl = qs("#marketBalance");
+  const heatEl = qs("#marketHeat");
+  const statusEl = qs("#marketStatus");
+  const logEl = qs("#marketLog");
+  const resultEl = qs("#marketResult");
+
+  const reduceMotion =
+    !!window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const MAX_LOG = 120;
+  const logLines = [];
+  function setStatus(text) {
+    if (statusEl) statusEl.textContent = text;
+  }
+
+  function write(text) {
+    const line = `[${timeStamp()}] ${text}`;
+    logLines.push(line);
+    while (logLines.length > MAX_LOG) logLines.shift();
+    if (logEl) {
+      logEl.textContent = logLines.join("\n");
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+  }
+
+  function fmtEth(n) {
+    return `Ξ ${Number(n).toFixed(2)}`;
+  }
+
+  const items = [
+    {
+      id: "widow-knife",
+      name: "RED WIDOW // HEMLOCK BLADE",
+      kind: "blade",
+      rarity: "RELIC",
+      price: 1.2,
+      power: 8,
+      desc: "Silent edge. Worn steel. Signed in blood, paid in silence.",
+    },
+    {
+      id: "nocturne-pistol",
+      name: "NOCTURNE-9 // SUPPRESSED",
+      kind: "firearm",
+      rarity: "BLACK",
+      price: 2.4,
+      power: 7,
+      desc: "Low report. High consequence. Leaves a cold hole in the log.",
+    },
+    {
+      id: "glasswire",
+      name: "GLASSWIRE // MONO-FILAMENT",
+      kind: "blade",
+      rarity: "CLASSIFIED",
+      price: 1.7,
+      power: 6,
+      desc: "Invisible cut. You only notice when the world separates.",
+    },
+    {
+      id: "cinder-charge",
+      name: "CINDER CHARGE // DEMO",
+      kind: "explosive",
+      rarity: "HOT",
+      price: 3.1,
+      power: 9,
+      desc: "Controlled chaos in a fist-sized coffin. Handle with discipline.",
+    },
+    {
+      id: "specter-rig",
+      name: "SPECTER RIG // NEURAL TETHER",
+      kind: "cyber",
+      rarity: "PROTOTYPE",
+      price: 4.6,
+      power: 9,
+      desc: "Ghost-walk interface. Redlines perception. Costs more than money.",
+    },
+    {
+      id: "grave-sight",
+      name: "GRAVE-SIGHT // OPTIC IMPLANT",
+      kind: "cyber",
+      rarity: "BLACK",
+      price: 3.8,
+      power: 8,
+      desc: "Find motion in shadows. Read lies in micro-tremors.",
+    },
+    {
+      id: "dracula-sigil",
+      name: "DRACULA SIGIL // VAMPIRIC TOKEN",
+      kind: "relic",
+      rarity: "CURSED",
+      price: 5.4,
+      power: 9,
+      desc: "Elegant and deadly. The seal watches back.",
+    },
+    {
+      id: "hollow-key",
+      name: "HOLLOW KEY // LOCK-BREACHER",
+      kind: "relic",
+      rarity: "CLASSIFIED",
+      price: 2.9,
+      power: 7,
+      desc: "Opens doors that were never meant to exist.",
+    },
+  ];
+
+  function stableSerial(id) {
+    const h = (() => {
+      let x = 2166136261;
+      for (let i = 0; i < id.length; i++) {
+        x ^= id.charCodeAt(i);
+        x = Math.imul(x, 16777619);
+      }
+      return x >>> 0;
+    })();
+    const hex = h.toString(16).toUpperCase().padStart(8, "0");
+    return `DA-${hex.slice(0, 4)}-${hex.slice(4)}`;
+  }
+
+  function kindLabel(kind) {
+    if (kind === "blade") return "BLADE";
+    if (kind === "firearm") return "FIREARM";
+    if (kind === "explosive") return "EXPLOSIVE";
+    if (kind === "cyber") return "CYBERWARE";
+    if (kind === "relic") return "RELIC";
+    return "BLACK FILE";
+  }
+
+  let cart = [];
+
+  function cartTotal() {
+    return cart.reduce((sum, it) => sum + (it.price || 0), 0);
+  }
+
+  function heatLevel(total) {
+    if (total >= 8) return "HIGH";
+    if (total >= 4) return "MED";
+    return "LOW";
+  }
+
+  function updateLedgerUi() {
+    const total = cartTotal();
+    if (balanceEl) balanceEl.textContent = fmtEth(total);
+
+    if (heatEl) {
+      const lvl = heatLevel(total);
+      heatEl.textContent = `HEAT: ${lvl}`;
+      heatEl.classList.remove("pill--warn", "pill--bad");
+      if (lvl === "HIGH") heatEl.classList.add("pill--bad");
+      else if (lvl === "MED") heatEl.classList.add("pill--warn");
+    }
+  }
+
+  function filteredItems() {
+    const q = String(searchEl?.value || "").trim().toLowerCase();
+    const kind = String(catEl?.value || "all");
+    return items.filter((it) => {
+      const okKind = kind === "all" ? true : it.kind === kind;
+      const okQ = !q ? true : (it.name + " " + it.desc + " " + it.rarity).toLowerCase().includes(q);
+      return okKind && okQ;
+    });
+  }
+
+  function render() {
+    const list = filteredItems();
+    grid.innerHTML = "";
+
+    if (!list.length) {
+      const empty = document.createElement("div");
+      empty.className = "result result--terminal";
+      empty.textContent = "No listings. Try another query.";
+      grid.appendChild(empty);
+      return;
+    }
+
+    for (const it of list) {
+      const card = document.createElement("div");
+      card.className = "missionCard marketItem";
+      card.dataset.serial = stableSerial(it.id);
+      card.dataset.power = String(it.power);
+      card.dataset.class = `${kindLabel(it.kind)} / ${it.rarity}`;
+      card.dataset.marketId = it.id;
+
+      const head = document.createElement("div");
+      head.className = "missionCard__head";
+
+      const title = document.createElement("div");
+      title.className = "missionCard__title";
+      title.textContent = it.name;
+
+      const badge = document.createElement("span");
+      badge.className = it.kind === "explosive" ? "badge badge--red" : "badge";
+      badge.textContent = kindLabel(it.kind);
+
+      head.appendChild(title);
+      head.appendChild(badge);
+
+      const meta = document.createElement("div");
+      meta.className = "missionCard__meta";
+      meta.textContent = `${it.desc}  //  PRICE: ${fmtEth(it.price)}`;
+
+      const actions = document.createElement("div");
+      actions.className = "row";
+      actions.style.marginTop = "10px";
+
+      const viewBtn = document.createElement("button");
+      viewBtn.type = "button";
+      viewBtn.className = "btn btn--ghost marketView";
+      viewBtn.textContent = "View File";
+
+      const buyBtn = document.createElement("button");
+      buyBtn.type = "button";
+      buyBtn.className = "btn btn--primary marketBuy";
+      buyBtn.textContent = "Acquire";
+
+      actions.appendChild(viewBtn);
+      actions.appendChild(buyBtn);
+
+      card.appendChild(head);
+      card.appendChild(meta);
+      card.appendChild(actions);
+      grid.appendChild(card);
+    }
+  }
+
+  function getItemById(id) {
+    return items.find((x) => x.id === id) || null;
+  }
+
+  function showFile(it) {
+    if (!resultEl) return;
+    const lines = [];
+    lines.push("CLASSIFIED FILE");
+    lines.push("");
+    lines.push(`NAME: ${it.name}`);
+    lines.push(`SERIAL: ${stableSerial(it.id)}`);
+    lines.push(`CLASS: ${kindLabel(it.kind)} / ${it.rarity}`);
+    lines.push(`POWER: ${String(it.power).padStart(2, "0")}/09`);
+    lines.push(`PRICE: ${fmtEth(it.price)}`);
+    lines.push("");
+    lines.push(it.desc);
+    resultEl.textContent = lines.join("\n");
+  }
+
+  function acquire(it) {
+    cart.push(it);
+    updateLedgerUi();
+    write(`hold: ${stableSerial(it.id)} // ${it.name} // ${fmtEth(it.price)}`);
+    Sound.beep({ freq: 940, dur: 0.05, gain: 0.02 });
+  }
+
+  function purge() {
+    cart = [];
+    updateLedgerUi();
+    if (resultEl) resultEl.textContent = "Ledger purged.";
+    write("ledger: purged");
+    Sound.beep({ freq: 420, dur: 0.06, gain: 0.02 });
+  }
+
+  function checkout() {
+    const total = cartTotal();
+    if (!cart.length) {
+      if (resultEl) resultEl.textContent = "No holds. Acquire something first.";
+      return;
+    }
+
+    const lines = [];
+    lines.push("CHECKOUT (DEMO)");
+    lines.push("");
+    for (const it of cart) lines.push(`- ${stableSerial(it.id)}  ${it.name}  ${fmtEth(it.price)}`);
+    lines.push("");
+    lines.push(`TOTAL: ${fmtEth(total)}`);
+    lines.push("STATUS: HOLD CONFIRMED (SIMULATED)");
+
+    if (resultEl) resultEl.textContent = lines.join("\n");
+    write(`checkout: confirmed // total ${fmtEth(total)}`);
+    Sound.beep({ freq: 990, dur: 0.06, gain: 0.022 });
+  }
+
+  // Events
+  grid.addEventListener("click", (ev) => {
+    const target = ev.target;
+    const card = target && target.closest ? target.closest(".marketItem") : null;
+    if (!card) return;
+    const id = card.dataset.marketId;
+    const it = id ? getItemById(id) : null;
+    if (!it) return;
+
+    if (target.closest && target.closest(".marketBuy")) {
+      acquire(it);
+      return;
+    }
+
+    showFile(it);
+    write(`file: opened ${stableSerial(it.id)} // ${it.name}`);
+    Sound.beep({ freq: 780, dur: 0.04, gain: 0.016 });
+  });
+
+  function onFilterChanged() {
+    render();
+    setStatus("filtered");
+    window.setTimeout(() => setStatus("idle"), 520);
+  }
+
+  if (searchEl) searchEl.addEventListener("input", onFilterChanged);
+  if (catEl) catEl.addEventListener("change", onFilterChanged);
+  if (refreshBtn)
+    refreshBtn.addEventListener("click", () => {
+      // Small shuffle to make the panel feel alive.
+      items.sort(() => (Math.random() < 0.5 ? -1 : 1));
+      render();
+      write("inventory: resynced");
+      setStatus("sync");
+      Sound.beep({ freq: 880, dur: 0.05, gain: 0.018 });
+      window.setTimeout(() => setStatus("idle"), 520);
+    });
+  if (clearBtn) clearBtn.addEventListener("click", purge);
+  if (checkoutBtn) checkoutBtn.addEventListener("click", checkout);
+
+  // Init
+  setStatus("idle");
+  write("market: channel established");
+  updateLedgerUi();
+  render();
+}
+
 // ---- Boot
 async function boot() {
   Terminal.bind();
@@ -1941,6 +2761,7 @@ async function boot() {
   Threat.update();
   Threat.startDecay();
   initMatrixBackground();
+  initCinematicFx();
   wireSoundToggle();
   wireTerminalClear();
   wireVideoAssets();
@@ -1974,6 +2795,7 @@ async function boot() {
     await showBootOverlay(["loading dashboard...", "syncing event stream...", "modules online"]);
     BookIntro.openIfNeeded();
     initDashboardEmptyStates();
+    initMarket();
     wireDashboardQuickActions();
     wireBookPages();
     await loadMe();

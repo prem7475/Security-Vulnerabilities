@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>VulnLab - Dashboard</title>
+    <title>Dark Arsenal - Dashboard</title>
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
@@ -18,8 +18,8 @@
     <div class="bookIntro" id="bookIntro" aria-hidden="true">
       <div class="bookIntro__card">
         <div class="bookIntro__inner">
-          <p class="bookIntro__title">The Hacker Book</p>
-          <p class="bookIntro__sub">A chaptered dashboard with page flips and a focused reading view.</p>
+          <p class="bookIntro__title">DARK ARSENAL</p>
+          <p class="bookIntro__sub">Black-market interface. Haunted signal. Stay sharp. Stay quiet.</p>
           <div class="bookIntro__art">
             <video
               id="introVideo"
@@ -34,8 +34,8 @@
             <img id="introImage" src="/skeleton-reading.svg" alt="" />
           </div>
           <div class="bookIntro__ctaRow">
-            <button class="btn btn--primary" id="openBookBtn" type="button">Enter Chapters</button>
-            <span class="bookIntro__hint">Tip: Flip chapters from the left page.</span>
+            <button class="btn btn--primary" id="openBookBtn" type="button">Enter Market</button>
+            <span class="bookIntro__hint">Tip: Flip sealed files from the left page.</span>
           </div>
         </div>
       </div>
@@ -51,8 +51,8 @@
     <header class="topbar">
       <a class="brand" href="/">
         <span class="brand__mark" aria-hidden="true"></span>
-        <span class="brand__name">VulnLab</span>
-        <span class="brand__sub">Security Console</span>
+        <span class="brand__name">Dark Arsenal</span>
+        <span class="brand__sub">Black-Market Dashboard</span>
       </a>
 
       <nav class="nav" aria-label="Top navigation">
@@ -92,6 +92,13 @@
                   <span class="badge">START</span>
                 </div>
                 <div class="missionCard__meta">Simulation console, live analyzer, and overview.</div>
+              </a>
+              <a class="missionCard" href="#market">
+                <div class="missionCard__head">
+                  <div class="missionCard__title">Black Market</div>
+                  <span class="badge badge--red">ARMORY</span>
+                </div>
+                <div class="missionCard__meta">Encrypted listings, ghost-signed manifests, and a cold ledger.</div>
               </a>
               <a class="missionCard" href="#lab-sqli">
                 <div class="missionCard__head">
@@ -254,6 +261,58 @@
                 </div>
               </div>
             </div>
+          </section>
+
+          <section class="panelGrid panelGrid--2" id="market">
+            <section class="panel">
+              <div class="panel__header">
+                <div class="panel__title">Black-Market Listings</div>
+                <p class="panel__subtitle">Encrypted inventory. Cursed channels. Demo-only visuals.</p>
+              </div>
+              <div class="panel__body stack">
+                <div class="row">
+                  <input class="input" id="marketSearch" type="text" placeholder="Search inventory..." autocomplete="off" />
+                  <select id="marketCategory" aria-label="Market category">
+                    <option value="all">All Classes</option>
+                    <option value="blade">Blades</option>
+                    <option value="firearm">Firearms</option>
+                    <option value="explosive">Explosives</option>
+                    <option value="cyber">Cyberware</option>
+                    <option value="relic">Occult Relics</option>
+                  </select>
+                  <button class="btn btn--primary" id="marketRefreshBtn" type="button">Resync</button>
+                </div>
+                <div class="missionGrid missionGrid--2" id="marketGrid" aria-live="polite"></div>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="panel__header">
+                <div class="panel__title">Ledger / Cart</div>
+                <p class="panel__subtitle">Temporary holds. No names. No refunds.</p>
+              </div>
+              <div class="panel__body stack">
+                <div class="row">
+                  <span class="chip">Balance: <span id="marketBalance">Ξ 0.00</span></span>
+                  <span class="chip pill--bad" id="marketHeat">HEAT: LOW</span>
+                </div>
+
+                <div class="terminalPanel">
+                  <div class="terminalPanel__head">
+                    <div class="terminalPanel__title">Ledger Stream</div>
+                    <div class="terminalPanel__status" id="marketStatus">idle</div>
+                  </div>
+                  <pre class="terminalPanel__body" id="marketLog"></pre>
+                </div>
+
+                <div class="row">
+                  <button class="btn btn--ghost" id="marketClearBtn" type="button">Purge</button>
+                  <button class="btn btn--primary" id="marketCheckoutBtn" type="button">Checkout</button>
+                </div>
+
+                <div class="result result--terminal" id="marketResult"></div>
+              </div>
+            </section>
           </section>
 
           <section class="panelGrid panelGrid--2">

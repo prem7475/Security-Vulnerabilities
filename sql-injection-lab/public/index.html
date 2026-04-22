@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>VulnLab</title>
+    <title>Dark Arsenal</title>
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
@@ -18,8 +18,8 @@
     <div class="bookIntro" id="bookIntro" aria-hidden="true">
       <div class="bookIntro__card">
         <div class="bookIntro__inner">
-          <p class="bookIntro__title">The Hacker Book</p>
-          <p class="bookIntro__sub">Start at the cover, pick a chapter, and flip through modules like pages.</p>
+          <p class="bookIntro__title">DARK ARSENAL</p>
+          <p class="bookIntro__sub">A forbidden console. Classified modules. No witnesses. Proceed with control.</p>
           <div class="bookIntro__art">
             <video
               id="introVideo"
@@ -34,8 +34,8 @@
             <img id="introImage" src="/skeleton-reading.svg" alt="" />
           </div>
           <div class="bookIntro__ctaRow">
-            <button class="btn btn--primary" id="openBookBtn" type="button">Open Book</button>
-            <span class="bookIntro__hint">Tip: Use the Table of Contents to jump between chapters.</span>
+            <button class="btn btn--primary" id="openBookBtn" type="button">Enter System</button>
+            <span class="bookIntro__hint">Tip: Use the Table of Contents to jump between sealed modules.</span>
           </div>
         </div>
       </div>
@@ -51,8 +51,8 @@
     <header class="topbar">
       <a class="brand" href="/">
         <span class="brand__mark" aria-hidden="true"></span>
-        <span class="brand__name">VulnLab</span>
-        <span class="brand__sub">Security Console</span>
+        <span class="brand__name">Dark Arsenal</span>
+        <span class="brand__sub">Forbidden Console</span>
       </a>
 
       <nav class="nav" aria-label="Top navigation">
@@ -71,6 +71,23 @@
     </header>
 
     <main class="shell">
+      <section class="hero" aria-label="Hero">
+        <div class="hero__inner">
+          <div class="hero__kicker">CLASSIFIED // UNDERGROUND INTERFACE</div>
+          <h1 class="hero__title">DARK ARSENAL</h1>
+          <p class="hero__sub">Danger, discipline, and controlled chaos. Enter the black market. Keep the signal quiet.</p>
+          <div class="hero__cta">
+            <a class="btn btn--primary" href="/dashboard#market">Enter Market</a>
+            <a class="btn btn--ghost" href="/login">Access Gateway</a>
+          </div>
+          <div class="hero__stats">
+            <span class="chip">Status: <span>ONLINE</span></span>
+            <span class="chip">Channel: <span>ENCRYPTED</span></span>
+            <span class="chip">Witnesses: <span>0</span></span>
+          </div>
+        </div>
+      </section>
+
       <div class="layout layout--book">
         <aside class="sidebar">
           <section class="panel">
@@ -81,45 +98,45 @@
             <div class="missionGrid">
               <a class="missionCard" href="/dashboard">
                 <div class="missionCard__head">
-                  <div class="missionCard__title">SQL Injection Lab</div>
+                  <div class="missionCard__title">SQL Injection</div>
                   <span class="badge badge--red">HIGH</span>
                 </div>
-                <div class="missionCard__meta">Input flags + server-side behavior preview.</div>
+                <div class="missionCard__meta">Classified entry vectors and server-side behavior preview.</div>
               </a>
               <a class="missionCard" href="/dashboard#lab-xss">
                 <div class="missionCard__head">
-                  <div class="missionCard__title">XSS Lab</div>
+                  <div class="missionCard__title">XSS</div>
                   <span class="badge badge--amber">MED</span>
                 </div>
-                <div class="missionCard__meta">Input validation and output encoding checks.</div>
+                <div class="missionCard__meta">Mirror-trick payloads, output encoding, and containment checks.</div>
               </a>
               <a class="missionCard" href="/dashboard#lab-auth">
                 <div class="missionCard__head">
-                  <div class="missionCard__title">Authentication Lab</div>
+                  <div class="missionCard__title">Authentication</div>
                   <span class="badge">INFO</span>
                 </div>
-                <div class="missionCard__meta">Sessions, hashing, and robust error handling.</div>
+                <div class="missionCard__meta">Sessions, hashing, and controlled failure behavior.</div>
               </a>
               <a class="missionCard" href="/dashboard#lab-idor">
                 <div class="missionCard__head">
                   <div class="missionCard__title">IDOR Lab</div>
                   <span class="badge badge--amber">MED</span>
                 </div>
-                <div class="missionCard__meta">Authorization checks for object access.</div>
+                <div class="missionCard__meta">Authorization seals and object access verification.</div>
               </a>
               <a class="missionCard" href="/dashboard#tools">
                 <div class="missionCard__head">
-                  <div class="missionCard__title">Security Tools</div>
+                  <div class="missionCard__title">Tools</div>
                   <span class="badge">GUIDE</span>
                 </div>
-                <div class="missionCard__meta">Interactive tool cards and output viewer.</div>
+                <div class="missionCard__meta">Arsenal utilities and output viewer.</div>
               </a>
               <a class="missionCard" href="/dashboard#learning">
                 <div class="missionCard__head">
-                  <div class="missionCard__title">Reference</div>
+                  <div class="missionCard__title">Grimoire</div>
                   <span class="badge">DOCS</span>
                 </div>
-                <div class="missionCard__meta">Concept notes and patterns.</div>
+                <div class="missionCard__meta">Concept notes, patterns, and forbidden basics.</div>
               </a>
             </div>
           </section>
@@ -141,11 +158,11 @@
             <section class="panel">
               <div class="panel__header">
                 <div class="panel__title">Welcome</div>
-                <p class="panel__subtitle">A fast console UI for exploring common web security patterns.</p>
+                <p class="panel__subtitle">A cinematic console for exploring high-risk security patterns.</p>
               </div>
               <div class="panel__body stack">
                 <div class="row">
-                  <a class="btn btn--primary" href="/login">Enter Lab</a>
+                  <a class="btn btn--primary" href="/login">Access Gateway</a>
                   <a class="btn btn--ghost" href="/dashboard">Open Dashboard</a>
                 </div>
                 <div class="result result--terminal" id="homeStatus"></div>
